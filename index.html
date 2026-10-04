@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Color Palette PRO</title>
+  <meta name="description" content="Pick a color, a photo or a theme and get beautiful, named color palettes. Save them in a flip-through swatch book and export to Procreate, Photoshop, Illustrator, Affinity, Canva, GIMP and more.">
+  <meta name="theme-color" content="#1E40AF">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Grandstander:wght@600;800&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="src/css/styles.css">
+</head>
+<body>
+  <div class="ambient" aria-hidden="true">
+    <span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span><span class="blob b4"></span>
+  </div>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <a class="brand" href="#create" data-nav="create" aria-label="Color Palette PRO home">
+      <img src="assets/logo.png" alt="" width="40" height="40">
+      <span class="brand-name">Color Palette <b>PRO</b></span>
+    </a>
+    <nav class="seg glass nav-seg" id="main-nav" aria-label="Main">
+      <span class="seg-ink" aria-hidden="true"></span>
+      <button type="button" class="is-on" data-nav="create">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0 0 18c.8 0 1.5-.7 1.5-1.5 0-.4-.2-.7-.4-1-.2-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.4-4-8-9-8Zm-5.5 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z"/></svg>
+        <span>Create</span>
+      </button>
+      <button type="button" data-nav="book">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm0 2v16h2V4H6Zm4 0v16h8V4h-8Z"/></svg>
+        <span>Swatch Book</span> <span class="badge" id="fav-count">0</span>
+      </button>
+    </nav>
+  </header>
+
+  <main id="main">
+    <!-- ================= CREATE ================= -->
+    <section id="view-create" class="view" aria-labelledby="create-title">
+      <h1 id="create-title" class="sr-only">Create palettes</h1>
+      <div class="studio-layout">
+        <aside class="studio glass" aria-label="Studio">
+          <div class="seg seg-modes" id="mode-seg" role="tablist" aria-label="Start from">
+            <span class="seg-ink" aria-hidden="true"></span>
+            <button type="button" role="tab" data-mode="color">Color</button>
+            <button type="button" role="tab" data-mode="photo">Photo</button>
+            <button type="button" role="tab" data-mode="theme">Theme</button>
+            <button type="button" role="tab" data-mode="build">Build</button>
+          </div>
+
+          <!-- color wheel: Color + Build modes -->
+          <div class="mode-panel" data-for="color build" id="wheel-panel">
+            <div class="wheel-wrap">
+              <canvas id="wheel" width="300" height="300" tabindex="0" role="slider"
+                aria-label="Color wheel. Left and right change hue, up and down change saturation."></canvas>
+              <span id="wheel-handle" class="wheel-handle" aria-hidden="true"></span>
+            </div>
+            <label class="field">
+              <span class="field-label">Brightness</span>
+              <input id="brightness" class="brightness" type="range" min="0" max="100" value="90">
+            </label>
+            <div class="base-row">
+              <span id="base-preview" class="base-preview" aria-hidden="true"></span>
+              <label class="hex-field">
+                <span class="sr-only">Hex color</span>
+                <input id="hex-input" type="text" maxlength="7" spellcheck="false" autocomplete="off" value="#33ADE8">
+              </label>
+              <span class="base-meta"><span id="base-name" class="base-name"></span> · <button type="button" class="link-btn" id="base-rgb" title="Copy RGB"></button></span>
+            </div>
+            <div class="picker-actions">
+              <button id="eyedropper" class="btn btn-glass" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 3.6a2.8 2.8 0 0 0-4 0l-2.2 2.2-1-1-1.4 1.4 1 1-7.1 7.1V18h3.7l7.1-7.1 1 1 1.4-1.4-1-1 2.2-2.2a2.8 2.8 0 0 0 0-4ZM8 16H6.2v-1.8l7-7 1.8 1.8-7 7Z"/></svg>
+                Pick from screen
+              </button>
+              <label class="btn btn-glass">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5v14H5V5h14m0-2H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Zm-4.9 8.9-3 3.9L9 13.1 6 17h12l-3.9-5.1Z"/></svg>
+                Pick from image
+                <input id="image-input" type="file" accept="image/*" hidden>
+              </label>
+              <button id="surprise" class="btn btn-glass" type="button" data-for="color">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2Z"/></svg>
+                Surprise me
+              </button>
+            </div>
+          </div>
+
+          <!-- Build mode tools -->
+          <div class="mode-panel" data-for="build">
+            <button id="build-add" class="btn btn-primary btn-wide" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z"/></svg>
+              Add this color
+            </button>
+            <details class="paste-box">
+              <summary>Paste HEX or RGB codes</summary>
+              <textarea id="paste-codes" rows="3" placeholder="#FF8FB1, #FFC75F&#10;rgb(127, 216, 190)"></textarea>
+              <button id="paste-add" class="btn btn-glass btn-wide" type="button">Add these colors</button>
+            </details>
+          </div>
+
+          <!-- Photo mode -->
+          <div class="mode-panel" data-for="photo">
+            <label class="dropzone" id="dropzone">
+              <input id="photo-input" type="file" accept="image/*" hidden>
+              <img id="photo-preview" alt="Your photo" hidden>
+              <span class="dz-empty" id="dz-empty">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3 7.2 5H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9Zm3 15a5 5 0 1 1 0-10 5 5 0 0 1 0 10Zm0-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/></svg>
+                <b>Drop a photo here</b>
+                <span>or tap to choose one. It never leaves your device.</span>
+              </span>
+            </label>
+            <div class="photo-dots" id="photo-dots"></div>
+          </div>
+
+          <!-- Theme mode -->
+          <div class="mode-panel" data-for="theme">
+            <label class="field">
+              <span class="field-label">Pick a theme</span>
+              <span class="select-wrap glass-inset">
+                <select id="theme-select"></select>
+              </span>
+            </label>
+            <div class="theme-grid" id="theme-grid" role="list"></div>
+          </div>
+
+          <!-- Options -->
+          <div class="options">
+            <label class="field" data-for="color photo theme">
+              <span class="field-label">Colors per palette <output id="count-out">8</output></span>
+              <input id="count" type="range" min="6" max="15" value="8">
+            </label>
+            <div class="field" data-for="color photo">
+              <span class="field-label">Harmonies <button type="button" class="link-btn" id="filter-clear">Mix of all</button></span>
+              <div class="fchips" id="harmony-filter" role="group" aria-label="Harmony filter"></div>
+            </div>
+            <div class="field" data-for="color photo theme">
+              <span class="field-label">Palettes to show <output id="total-out">Auto</output></span>
+              <div class="total-row">
+                <button type="button" class="fchip" id="total-auto" aria-pressed="true">Auto</button>
+                <input id="total" type="range" min="1" max="40" value="14" aria-label="Number of palettes">
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <div class="results">
+          <div class="results-bar glass">
+            <div class="shape-picker" role="radiogroup" aria-label="Swatch style" id="shape-picker"></div>
+            <button id="regen-all" class="btn btn-primary" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.6 6.4A8 8 0 1 0 19.7 14h-2.1a6 6 0 1 1-1.4-6.2L13 11h7V4l-2.4 2.4Z"/></svg>
+              <span>Shuffle all</span>
+            </button>
+          </div>
+          <div id="palettes" class="palettes" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SWATCH BOOK ================= -->
+    <section id="view-book" class="view" hidden aria-labelledby="book-title">
+      <div class="book-head">
+        <div>
+          <h1 id="book-title" class="display">My Swatch Book</h1>
+          <p class="muted" id="book-total"></p>
+        </div>
+        <div class="book-tools">
+          <button id="tab-add" class="btn btn-glass" type="button">+ New tab</button>
+          <button id="tab-auto" class="btn btn-glass" type="button">Sort by color</button>
+          <button class="btn btn-primary" type="button" data-nav="build">+ New palette</button>
+        </div>
+      </div>
+
+      <div class="book" id="book">
+        <div class="book-cover" aria-hidden="true"></div>
+        <div class="book-stage" id="book-stage" aria-live="polite"></div>
+        <nav class="book-tabs" id="book-tabs" aria-label="Tabs"></nav>
+      </div>
+
+      <div class="book-nav">
+        <button id="page-prev" class="icon-btn" type="button" aria-label="Previous page">‹</button>
+        <span id="page-info"></span>
+        <button id="page-next" class="icon-btn" type="button" aria-label="Next page">›</button>
+      </div>
+      <p class="book-hint muted">Swipe or use ← → to flip · Tap a palette to open · Press &amp; hold to move it</p>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <span>© <span id="year"></span> On the Rise Digital</span>
+    <a href="legal.html?doc=privacy">Privacy</a>
+    <a href="legal.html?doc=terms">Terms</a>
+    <a href="legal.html?doc=eula">Licence</a>
+    <a href="legal.html?doc=start">Help</a>
+    <a href="mailto:ontherisedigital@gmail.com">ontherisedigital@gmail.com</a>
+  </footer>
+
+  <!-- ================= FULL-SCREEN VIEWER ================= -->
+  <div class="viewer" id="viewer" hidden role="dialog" aria-modal="true" aria-labelledby="v-name">
+    <div class="viewer-backdrop"></div>
+    <div class="viewer-card glass" id="v-card">
+      <header class="v-head">
+        <div class="v-title">
+          <span class="v-tab" id="v-tab"></span>
+          <h2 id="v-name" class="display"></h2>
+          <p id="v-meta" class="muted"></p>
+        </div>
+        <div class="v-actions">
+          <button type="button" class="icon-btn" id="v-copy" aria-label="Copy all codes" title="Copy all codes">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1Zm3 4H8a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H8V7h11v14Z"/></svg>
+          </button>
+          <button type="button" class="icon-btn" id="v-edit" aria-label="Edit in studio" title="Edit in studio">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17.2V20h2.8l8.3-8.3-2.8-2.8L4 17.2Zm13.7-7.6a1 1 0 0 0 0-1.4l-1.9-1.9a1 1 0 0 0-1.4 0l-1.4 1.4 2.8 2.8 1.9-1.9Z"/></svg>
+          </button>
+          <button type="button" class="icon-btn" id="v-delete" aria-label="Remove from book" title="Remove from book">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 12H7L6 9Z"/></svg>
+          </button>
+          <button type="button" class="icon-btn" id="v-close" aria-label="Close">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6 10.6 12 5 6.4 6.4 5Z"/></svg>
+          </button>
+        </div>
+      </header>
+      <div class="v-body">
+        <button type="button" class="v-nav" id="v-prev" aria-label="Previous palette">‹</button>
+        <div class="v-colors" id="v-colors"></div>
+        <button type="button" class="v-nav" id="v-next" aria-label="Next palette">›</button>
+      </div>
+      <p class="v-pos muted" id="v-pos"></p>
+      <section class="v-export" aria-label="Quick export">
+        <h3>Quick export</h3>
+        <div class="v-fmt" id="v-fmt"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ================= POPOVERS & DIALOGS ================= -->
+  <div id="swap-pop" class="popover glass" role="dialog" aria-label="Choose a color" hidden>
+    <p class="popover-title" id="swap-title">Swap for…</p>
+    <div id="swap-options" class="swap-options"></div>
+    <label class="swap-custom">
+      <input id="swap-custom" type="color">
+      <span>Choose any color</span>
+    </label>
+  </div>
+
+  <div id="menu-pop" class="popover glass menu" role="menu" hidden></div>
+
+  <dialog id="export-dialog" class="modal glass sheet">
+    <form method="dialog" class="modal-head">
+      <h2 class="display" id="export-title">Export</h2>
+      <button class="icon-btn" aria-label="Close" value="close">✕</button>
+    </form>
+    <p class="muted sheet-sub">Pick the app you use — we'll make the right file.</p>
+    <div id="export-list"></div>
+  </dialog>
+
+  <dialog id="image-dialog" class="modal glass">
+    <form method="dialog" class="modal-head">
+      <h2 class="display">Tap a color in your image</h2>
+      <button class="icon-btn" aria-label="Close" value="close">✕</button>
+    </form>
+    <canvas id="image-canvas" class="image-canvas"></canvas>
+  </dialog>
+
+  <dialog id="ask-dialog" class="modal glass ask">
+    <form method="dialog">
+      <h2 class="display" id="ask-title"></h2>
+      <p id="ask-message" class="muted"></p>
+      <input id="ask-input" class="text-input" maxlength="30" autocomplete="off">
+      <div id="ask-colors" class="ask-colors"></div>
+      <div class="ask-actions">
+        <!-- OK comes first so Enter confirms; CSS shows it on the right. -->
+        <button class="btn btn-primary" value="ok" id="ask-ok">OK</button>
+        <button class="btn btn-glass" value="cancel" id="ask-cancel" formnovalidate>Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast glass" role="status" aria-live="polite"></div>
+
+  <script type="module" src="src/js/app.js"></script>
+</body>
+</html>

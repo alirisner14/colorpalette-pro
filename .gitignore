@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.*
+# Capacitor native projects (generated)
+android/app/build/
+ios/App/Pods/
+# Local tooling
+.claude/
