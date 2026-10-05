@@ -116,9 +116,21 @@ npm start          # dev server at http://localhost:5173
 npm test           # unit tests (also checks the offline file list)
 npm run shell      # rewrite the offline file list in sw.js after adding or removing files
 npm run build      # write the deployable files to dist/ (public files only)
+npm run preview    # serve dist/ to try exactly what will be deployed
 ```
 
 Open the app from `http://localhost:5173` (a web address, not a `file://` path) so the offline mode can work.
+
+## Deploying
+
+`npm run build` writes everything the site needs to `dist/` (including `sw.js`, which makes it work offline). Upload that
+folder to any static host.
+
+- **Vercel:** `vercel.json` already sets the build command (`npm run build`) and the output directory (`dist`), so importing
+  the repository just works. It also adds a few safe headers (`nosniff`, no referrer, and a no-cache rule for `sw.js`).
+- **Other hosts** (Netlify, Cloudflare Pages, GitHub Pages): set the build command to `npm run build` and the publish
+  directory to `dist`.
+- Serve it from a web address (https), not as a `file://` path, or the offline mode cannot start.
 
 ## Project structure
 
@@ -142,7 +154,8 @@ Open the app from `http://localhost:5173` (a web address, not a `file://` path) 
 │       ├── Offline         pwa.js, settingsui.js, lifecycle.js (cleanup), idb.js, imageutil.js, storage.js, store.js
 │       └── ui.js, uikit.js, render.js, shapes.js, exportsheet.js, palettemenu.js, legal.js, meta.js
 ├── tests/                  Node test runner unit tests
-├── scripts/                serve.mjs (dev server), shell.mjs (offline file list), build.mjs (dist/)
+├── scripts/                serve.mjs (dev server and preview), shell.mjs (offline file list), build.mjs (dist/)
+├── vercel.json             Vercel build command, output folder and headers
 ├── docs/                   Roadmap and mobile plan
 └── Legal/                  EULA, privacy, terms, storefront and app-store documents, and the font licences
 ```

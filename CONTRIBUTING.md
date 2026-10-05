@@ -12,7 +12,8 @@ The notes below are for anyone with access who is working on the code.
 npm start            # http://localhost:5173 (use a web address, not file://, so offline mode can work)
 npm test             # unit tests (Node's built-in test runner)
 npm run shell        # rewrite the offline file list in sw.js
-npm run build        # write the public files to dist/
+npm run build        # write the public files to dist/ (including sw.js)
+npm run preview      # serve dist/ to check exactly what will be deployed
 ```
 
 There are no runtime dependencies and no bundler. Keep it that way unless there's a strong reason not to.

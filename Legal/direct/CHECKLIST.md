@@ -28,7 +28,8 @@ This is a web app, so "delivery" means one of these:
 **Building what you host or sell.** Run `npm run build`. It writes `dist/`,
 which holds exactly the public files (the app, the fonts, the public legal
 documents) and none of the internal notes in this folder. Upload `dist/` to
-your host, or zip it for option B. The app stores itself on the buyer's device
+your host, or zip it for option B. On Vercel, `vercel.json` already sets the build command and the output folder; on other
+hosts set the build command to `npm run build` and the publish folder to `dist`. Try the result first with `npm run preview`. The app stores itself on the buyer's device
 the first time it loads online, then works with no connection.
 
 ## Pick a payment provider

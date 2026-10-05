@@ -1,10 +1,12 @@
-// Zero-dependency static server for local development: `npm start`.
+// Zero-dependency static server for local development (`npm start`) and for trying the built copy (`npm run preview`).
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
+// `npm start` serves the project; `npm run preview` (node scripts/serve.mjs dist) serves the built copy.
+const folder = process.argv[2];
+const root = resolve(folder ? resolve(folder) : fileURLToPath(new URL('..', import.meta.url)));
 const port = Number(process.env.PORT) || 5173;
 const types = {
   '.html': 'text/html; charset=utf-8',

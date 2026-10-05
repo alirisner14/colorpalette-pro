@@ -8,6 +8,15 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 Nothing yet.
 
+## [1.0.1] — 2026-10-05
+
+### Fixed
+- `npm run build` left the service worker (`sw.js`) out of `dist/`, so a deployed copy could never work offline. It is now included, and a test checks that everything the pages, styles and manifest point at is deployed.
+
+### Added
+- `vercel.json`, so the site deploys on Vercel as it is (build command, output folder `dist`, and a few safe headers).
+- `npm run preview`, which serves `dist/` so you can try exactly what will be deployed.
+
 ## [1.0.0] — 2026-10-05
 
 ### Added
