@@ -19,15 +19,16 @@ See `SUBMISSION.md` for the detail behind each line.
 
 ## Documents
 
-- [ ] `shared/PRIVACY-POLICY.md`, **edited for the native app** (no Google
-      Fonts, "app storage") and published at a public URL
+- [ ] `shared/PRIVACY-POLICY.md`, **edited for the native app** (the fonts are
+      already bundled, so change "your browser's storage" to "app storage"
+      and drop the web-host paragraph in §5) and published at a public URL
 - [ ] `shared/EULA.md`, edited for the stores:
   - [ ] refund section replaced with "the store's policy applies"
   - [ ] access links, keys and chargebacks removed
   - [ ] checked against Apple's minimum EULA terms
 - [ ] `shared/TERMS-OF-USE.md` included
-- [ ] `shared/THIRD-PARTY-LICENCES.md` inside the app, with `OFL.txt` and
-      every Capacitor plugin listed
+- [ ] `shared/THIRD-PARTY-LICENCES.md` inside the app, with the OFL texts from
+      `licences/` and every Capacitor plugin listed
 - [ ] A support email that is monitored
 
 **Not needed on this route:** Terms of Sale, Refund Policy, Website Terms,

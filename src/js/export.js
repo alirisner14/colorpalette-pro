@@ -3,22 +3,23 @@ import { rgbString } from './color.js';
 import { getShape } from './shapes.js';
 import { typeLabel } from './harmonies.js';
 import { getFormat } from './formats.js';
+import { blobUrl, releaseCanvas } from './lifecycle.js';
 
 export const APP_NAME = 'Color Palette PRO';
 
 export function safeFileName(name) {
-  return (name || 'palette').replace(/[\/:*?"<>|]+/g, '').replace(/s+/g, ' ').trim() || 'palette';
+  return (name || 'palette').replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, ' ').trim() || 'palette';
 }
 
+/** Save a Blob as a file. The temporary URL is revoked a few seconds later. */
 export function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
+  const url = blobUrl(blob, 10000);
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
   a.click();
   a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
 /** Build the file for a format id. Returns { blob, filename }. */
@@ -174,6 +175,8 @@ export async function paletteImageBlob(palette, shapeId = 'chip', { type = 'imag
   ctx.fillText(`Made with ${APP_NAME}`, W - pad, H - 48);
   ctx.textAlign = 'left';
 
-  return new Promise((resolve) => canvas.toBlob(resolve, type, 0.94));
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, type, 0.94));
+  releaseCanvas(canvas); // free the pixel buffer right away
+  return blob;
 }
 

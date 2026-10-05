@@ -29,8 +29,9 @@ what they take off your hands.
 
 1. **A privacy policy at a public URL.** Use `shared/PRIVACY-POLICY.md`
    (served at `legal.html?doc=privacy`). Before you submit, edit it for the
-   native app: the fonts will be bundled, so delete the Google Fonts
-   paragraph. Storage becomes "app storage" rather than "browser storage".
+   native app: the fonts are already bundled (nothing is loaded from Google
+   Fonts), so only the storage wording changes: "app storage" rather than
+   "browser storage", and the web-host paragraph in section 5 goes.
 2. **Privacy disclosures.**
    - Apple **App Privacy** ("nutrition label"): **Data Not Collected**. This
      is accurate as long as the app keeps sending nothing anywhere.

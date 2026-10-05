@@ -10,10 +10,12 @@
   <link rel="icon" href="assets/favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
   <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Grandstander:wght@600;800&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="preload" href="assets/fonts/nunito-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/grandstander-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="src/css/fonts.css">
   <link rel="stylesheet" href="src/css/styles.css">
+  <link rel="stylesheet" href="src/css/book.css">
+  <link rel="stylesheet" href="src/css/dialogs.css">
 </head>
 <body>
   <div class="ambient" aria-hidden="true">
@@ -37,6 +39,12 @@
         <span>Swatch Book</span> <span class="badge" id="fav-count">0</span>
       </button>
     </nav>
+    <div class="topbar-tools">
+      <button type="button" class="btn btn-glass btn-sm" id="install-btn" hidden>Install</button>
+      <button type="button" class="icon-btn" id="open-settings" aria-label="Settings, storage and backup" title="Settings, storage and backup">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6a.5.5 0 0 0 .1-.6l-1.9-3.3a.5.5 0 0 0-.6-.2l-2.4 1a7.5 7.5 0 0 0-1.7-1l-.4-2.5a.5.5 0 0 0-.5-.4h-3.8a.5.5 0 0 0-.5.4l-.4 2.5a7.5 7.5 0 0 0-1.7 1l-2.4-1a.5.5 0 0 0-.6.2L2.6 8.8a.5.5 0 0 0 .1.6l2 1.6a7.6 7.6 0 0 0 0 2l-2 1.6a.5.5 0 0 0-.1.6l1.9 3.3c.1.2.4.3.6.2l2.4-1c.5.4 1.1.7 1.7 1l.4 2.5c0 .2.2.4.5.4h3.8c.3 0 .5-.2.5-.4l.4-2.5c.6-.3 1.2-.6 1.7-1l2.4 1c.2.1.5 0 .6-.2l1.9-3.3a.5.5 0 0 0-.1-.6l-2-1.6ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/></svg>
+      </button>
+    </div>
   </header>
 
   <main id="main">
@@ -50,6 +58,7 @@
             <button type="button" role="tab" data-mode="color">Color</button>
             <button type="button" role="tab" data-mode="photo">Photo</button>
             <button type="button" role="tab" data-mode="theme">Theme</button>
+            <button type="button" role="tab" data-mode="mood">Mood</button>
             <button type="button" role="tab" data-mode="build">Build</button>
           </div>
 
@@ -100,6 +109,10 @@
               <textarea id="paste-codes" rows="3" placeholder="#FF8FB1, #FFC75F&#10;rgb(127, 216, 190)"></textarea>
               <button id="paste-add" class="btn btn-glass btn-wide" type="button">Add these colors</button>
             </details>
+            <button id="build-import" class="btn btn-glass btn-wide" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20h14v-2H5v2Zm7-16-5.5 5.5 1.4 1.4L11 7.8V16h2V7.8l3.1 3.1 1.4-1.4L12 4Z"/></svg>
+              Import a palette file
+            </button>
           </div>
 
           <!-- Photo mode -->
@@ -107,6 +120,7 @@
             <label class="dropzone" id="dropzone">
               <input id="photo-input" type="file" accept="image/*" hidden>
               <img id="photo-preview" alt="Your photo" hidden>
+              <button type="button" class="photo-remove" id="photo-remove" hidden aria-label="Remove photo">✕</button>
               <span class="dz-empty" id="dz-empty">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3 7.2 5H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9Zm3 15a5 5 0 1 1 0-10 5 5 0 0 1 0 10Zm0-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/></svg>
                 <b>Drop a photo here</b>
@@ -127,9 +141,23 @@
             <div class="theme-grid" id="theme-grid" role="list"></div>
           </div>
 
+          <!-- Mood mode -->
+          <div class="mode-panel" data-for="mood">
+            <label class="field">
+              <span class="field-label">Describe a mood, place or thing</span>
+              <input id="mood-input" class="text-input" maxlength="60" placeholder="rainy café, cozy winter…" autocomplete="off" enterkeyhint="go">
+            </label>
+            <button id="mood-go" class="btn btn-primary btn-wide" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2Z"/></svg>
+              Make palettes
+            </button>
+            <p class="dlg-note" id="mood-note" aria-live="polite"></p>
+            <div class="fchips" id="mood-suggest" aria-label="Ideas to try"></div>
+          </div>
+
           <!-- Options -->
           <div class="options">
-            <label class="field" data-for="color photo theme">
+            <label class="field" data-for="color photo theme mood">
               <span class="field-label">Colors per palette <output id="count-out">8</output></span>
               <input id="count" type="range" min="6" max="15" value="8">
             </label>
@@ -137,7 +165,7 @@
               <span class="field-label">Harmonies <button type="button" class="link-btn" id="filter-clear">Mix of all</button></span>
               <div class="fchips" id="harmony-filter" role="group" aria-label="Harmony filter"></div>
             </div>
-            <div class="field" data-for="color photo theme">
+            <div class="field" data-for="color photo theme mood">
               <span class="field-label">Palettes to show <output id="total-out">Auto</output></span>
               <div class="total-row">
                 <button type="button" class="fchip" id="total-auto" aria-pressed="true">Auto</button>
@@ -160,7 +188,7 @@
       </div>
     </section>
 
-    <!-- ================= SWATCH BOOK ================= -->
+    <!-- ================= SWATCH BOOK / DECK ================= -->
     <section id="view-book" class="view" hidden aria-labelledby="book-title">
       <div class="book-head">
         <div>
@@ -168,15 +196,27 @@
           <p class="muted" id="book-total"></p>
         </div>
         <div class="book-tools">
+          <div class="seg-inline" id="layout-seg" role="radiogroup" aria-label="Show my palettes as">
+            <button type="button" role="radio" class="is-on" aria-checked="true" data-layout="book">Book</button>
+            <button type="button" role="radio" aria-checked="false" data-layout="deck">Deck</button>
+          </div>
+          <button id="book-customize" class="btn btn-glass" type="button">Customize</button>
           <button id="tab-add" class="btn btn-glass" type="button">+ New tab</button>
-          <button id="tab-auto" class="btn btn-glass" type="button">Sort by color</button>
+          <button id="book-more" class="btn btn-glass" type="button" aria-haspopup="menu">More</button>
           <button class="btn btn-primary" type="button" data-nav="build">+ New palette</button>
         </div>
       </div>
 
-      <div class="book" id="book">
-        <div class="book-cover" aria-hidden="true"></div>
-        <div class="book-stage" id="book-stage" aria-live="polite"></div>
+      <div class="book-area" id="book-area" data-layout="book">
+        <div class="book" id="book">
+          <div class="book-body" id="book-body">
+            <div class="book-stage" id="book-stage" aria-live="polite"></div>
+          </div>
+        </div>
+        <div class="deck" id="deck" hidden>
+          <div class="deck-stage" id="deck-stage" tabindex="0" role="group" aria-roledescription="deck of blades" aria-label="Swatch deck. Swipe or use the arrow keys to fan through the blades."></div>
+          <input id="deck-scrub" class="deck-scrub" type="range" min="0" max="0" value="0" aria-label="Scrub through the deck">
+        </div>
         <nav class="book-tabs" id="book-tabs" aria-label="Tabs"></nav>
       </div>
 
@@ -185,7 +225,7 @@
         <span id="page-info"></span>
         <button id="page-next" class="icon-btn" type="button" aria-label="Next page">›</button>
       </div>
-      <p class="book-hint muted">Swipe or use ← → to flip · Tap a palette to open · Press &amp; hold to move it</p>
+      <p class="book-hint muted" id="book-hint"></p>
     </section>
   </main>
 
@@ -211,6 +251,9 @@
         <div class="v-actions">
           <button type="button" class="icon-btn" id="v-copy" aria-label="Copy all codes" title="Copy all codes">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1Zm3 4H8a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H8V7h11v14Z"/></svg>
+          </button>
+          <button type="button" class="icon-btn" id="v-more" aria-label="More: move, art, share, print" title="More: move, art, share, print" aria-haspopup="menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
           </button>
           <button type="button" class="icon-btn" id="v-edit" aria-label="Edit in studio" title="Edit in studio">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17.2V20h2.8l8.3-8.3-2.8-2.8L4 17.2Zm13.7-7.6a1 1 0 0 0 0-1.4l-1.9-1.9a1 1 0 0 0-1.4 0l-1.4 1.4 2.8 2.8 1.9-1.9Z"/></svg>

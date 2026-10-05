@@ -5,19 +5,27 @@ import {
 import { nameColor, nameColors, namePalette } from './names.js';
 import { SHAPES, getShape } from './shapes.js';
 import { THEMES, getTheme, generateThemeColors } from './themes.js';
+import { moodPalettes, SUGGESTIONS } from './mood.js';
+import { mergeLocked, carryLocks, hasLocks, toggleLock, unlockAll } from './lock.js';
+import { extractShareCode } from './sharecode.js';
 import { extractPhotoColors, samplePixels, loadImagePixels } from './photo.js';
+import { decodeImage, drawScaled } from './imageutil.js';
+import { releaseCanvas, closeBitmap } from './lifecycle.js';
+import { initPwa, canInstall, promptInstall, onPwaChange } from './pwa.js';
 import { addPalette, updatePalette, removePalette, hasPalette, getSection, paletteCount } from './book.js';
-import { book, prefs, persistBook, persistPrefs, on } from './store.js';
+import { book, prefs, persistBook, persistPrefs, on, getBookOpts, setBookOpts } from './store.js';
 import { ColorWheel } from './picker.js';
 import { paletteHtml, rgbCss } from './render.js';
 import {
   $, $$, esc, uid, toast, copyText, openPopover, closePopover, showMenu, syncSegment, initSheen, burst, haptic, ICONS, reducedMotion,
 } from './ui.js';
 import { openExportSheet, initExportSheet } from './exportsheet.js';
-import { initBook, showBook } from './bookview.js';
+import { initBook, showBook, renderBook } from './bookview.js';
+import { loadCoverImages, coverImage } from './cover.js';
 import { initViewer, copyAllMenu } from './viewer.js';
+import { paletteMoreItems } from './palettemenu.js';
 
-const MODES = ['color', 'photo', 'theme', 'build'];
+const MODES = ['color', 'photo', 'theme', 'mood', 'build'];
 const BUILD_MAX = 30;
 
 const state = {
@@ -28,7 +36,8 @@ const state = {
   filter: Array.isArray(prefs.filter) ? prefs.filter.filter((id) => HARMONIES.some((h) => h.id === id)) : [],
   total: Number(prefs.total) || 0, // 0 = auto
   themeId: getTheme(prefs.themeId).id,
-  photo: null, // { url, pixels, colors }
+  photo: null, // { thumb (data URL), pixels, colors }
+  mood: { text: typeof prefs.moodText === 'string' ? prefs.moodText.slice(0, 60) : '', info: null },
   palettes: [],
   draft: prefs.draft?.colors ? prefs.draft : null,
   view: 'create',
@@ -41,7 +50,7 @@ function newDraft() {
 
 const savePrefs = () => persistPrefs({
   mode: state.mode, base: state.base, count: state.count, shape: state.shape,
-  filter: state.filter, total: state.total, themeId: state.themeId, draft: state.draft,
+  filter: state.filter, total: state.total, themeId: state.themeId, draft: state.draft, moodText: state.mood.text,
 });
 
 /* ================= palette generation ================= */
@@ -61,7 +70,14 @@ function planFor(total) {
   return harmonyPlan(state.filter, total);
 }
 
-function generate({ stable = false } = {}) {
+/** Make a fresh set of palettes; locked colors from the previous set carry over. */
+function generate(opts = {}) {
+  const prev = state.palettes;
+  generateFresh(opts);
+  if (state.palettes.length && prev.some(hasLocks)) state.palettes = carryLocks(prev, state.palettes);
+}
+
+function generateFresh({ stable = false } = {}) {
   const taken = new Set();
   const seedFor = (i) => (stable ? 7919 * (i + 1) : randSeed());
   if (state.mode === 'color') {
@@ -80,6 +96,21 @@ function generate({ stable = false } = {}) {
       const base = bases[i % bases.length];
       return makePalette(h, generateColors(base, h, state.count, seedFor(i)), taken, { base, source: 'photo' });
     })];
+  } else if (state.mode === 'mood') {
+    const text = state.mood.text.trim();
+    if (!text) { state.palettes = []; state.mood.info = null; return; }
+    const res = moodPalettes(text, { count: state.count, variants: state.total || 9, seed: stable ? 1 : randSeed() });
+    state.mood.info = { known: res.known, unknown: res.unknown, fallback: res.fallback };
+    state.palettes = res.palettes.map((mp) => {
+      const names = nameColors(mp.hexes);
+      let name = mp.name;
+      for (let n = 2; taken.has(name); n++) name = `${mp.name} ${n}`;
+      taken.add(name);
+      return {
+        id: uid(), name, harmony: 'mood', source: 'mood', moodText: text, variant: mp.variant,
+        colors: mp.hexes.map((hex, i) => ({ hex, name: names[i] })), createdAt: new Date().toISOString(),
+      };
+    });
   } else if (state.mode === 'theme') {
     const n = state.total || 9;
     state.palettes = Array.from({ length: n }, (_, i) => makePalette(
@@ -103,7 +134,7 @@ function builderHtml() {
   const saved = hasPalette(book, d.id);
   const actions = [
     `<button type="button" class="btn btn-primary btn-sm" data-action="build-save" data-pid="${d.id}" ${d.colors.length ? '' : 'disabled'}>${ICONS.star}<span>${saved ? 'Saved ✓' : 'Save to book'}</span></button>`,
-    'add', 'copyall', 'export',
+    'add', 'copyall', 'export', 'more',
     `<button type="button" class="icon-btn" data-action="build-new" aria-label="Start a new palette" title="Start a new palette">${ICONS.sparkle}</button>`,
   ];
   if (!d.colors.length) {
@@ -116,7 +147,7 @@ function builderHtml() {
     </article>`;
   }
   const editing = saved ? `<p class="builder-note">${ICONS.book} Editing a palette from your swatch book — changes save automatically.</p>` : '';
-  return editing + paletteHtml(d, { shapeId: state.shape, actions, maxColors: BUILD_MAX, extraClass: 'builder' });
+  return editing + paletteHtml(d, { shapeId: state.shape, actions, maxColors: BUILD_MAX, extraClass: 'builder', lockable: false });
 }
 
 function emptyPhotoHtml() {
@@ -127,11 +158,20 @@ function emptyPhotoHtml() {
   </div></article>`;
 }
 
+function emptyMoodHtml() {
+  return `<article class="palette glass empty-builder"><div class="builder-empty">
+    <span class="be-icon">${ICONS.sparkle}</span>
+    <h2 class="display">Palettes from your words</h2>
+    <p class="muted">Describe a place, a food, the weather or a feeling, like <b>rainy café</b> or <b>enchanted forest</b>, and get palettes to match. It works with no internet at all.</p>
+  </div></article>`;
+}
+
 function renderPalettes({ animate = true } = {}) {
   const el = $('#palettes');
   el.classList.toggle('no-anim', !animate || reducedMotion());
   if (state.mode === 'build') el.innerHTML = builderHtml();
   else if (state.mode === 'photo' && !state.photo) el.innerHTML = emptyPhotoHtml();
+  else if (state.mode === 'mood' && !state.palettes.length) el.innerHTML = emptyMoodHtml();
   else el.innerHTML = state.palettes.map(cardHtml).join('');
   updateAmbient();
 }
@@ -139,7 +179,10 @@ function renderPalettes({ animate = true } = {}) {
 function rerender(p) {
   if (p === state.draft) { renderPalettes({ animate: false }); return; }
   const node = $(`#palettes .palette[data-id="${p.id}"]`);
-  if (node) node.outerHTML = cardHtml(p);
+  if (node) {
+    node.outerHTML = cardHtml(p);
+    $(`#palettes .palette[data-id="${p.id}"]`)?.classList.add('no-anim'); // small edits should not re-deal every swatch
+  }
 }
 
 function renderShapePicker() {
@@ -163,7 +206,7 @@ function renderFilter() {
 function renderTotal() {
   const auto = !state.total;
   const types = state.filter.length || HARMONIES.length;
-  const autoN = state.mode === 'theme' ? 9 : types * PER_TYPE_DEFAULT + (state.mode === 'photo' ? 1 : 0);
+  const autoN = state.mode === 'theme' || state.mode === 'mood' ? 9 : types * PER_TYPE_DEFAULT + (state.mode === 'photo' ? 1 : 0);
   $('#total-auto').setAttribute('aria-pressed', auto);
   $('#total-auto').classList.toggle('is-on', auto);
   $('#total').classList.toggle('is-auto', auto);
@@ -196,7 +239,8 @@ function renderPhoto() {
   $('#photo-preview').hidden = !ph;
   $('#dz-empty').hidden = !!ph;
   $('#dropzone').classList.toggle('has-photo', !!ph);
-  if (ph) $('#photo-preview').src = ph.url;
+  if (ph) $('#photo-preview').src = ph.thumb;
+  $('#photo-remove').hidden = !ph;
   $('#photo-dots').innerHTML = ph?.colors ? ph.colors.map((c) => `<button type="button" class="dot" style="--c:${c}" data-action="copy" data-text="${c}" title="${c}"></button>`).join('') : '';
 }
 
@@ -303,10 +347,16 @@ function shufflePalette(id) {
   let hexes;
   if (old.harmony.startsWith('theme:')) hexes = generateThemeColors(state.themeId, state.count, randSeed(), i % 3);
   else if (old.harmony === 'photo-pure') hexes = extractPhotoColors(state.photo.pixels, state.count, randSeed());
-  else hexes = generateColors(old.base, old.harmony, state.count, randSeed());
-  state.palettes[i] = makePalette(old.harmony, hexes, taken, { base: old.base, source: old.source });
+  else if (old.harmony === 'mood') {
+    const res = moodPalettes(old.moodText, { count: state.count, variants: 9, seed: randSeed() });
+    hexes = (res.palettes.find((m) => m.variant === old.variant) ?? res.palettes[0]).hexes;
+  } else hexes = generateColors(old.base, old.harmony, state.count, randSeed());
+  const fresh = makePalette(old.harmony, hexes, taken, { base: old.base, source: old.source, moodText: old.moodText, variant: old.variant });
+  if (old.harmony === 'mood') fresh.name = old.name;
+  if (hasLocks(old)) fresh.colors = mergeLocked(old.colors, hexes, state.count);
+  state.palettes[i] = fresh;
   const node = $(`#palettes .palette[data-id="${old.id}"]`);
-  if (node) node.outerHTML = cardHtml(state.palettes[i]);
+  if (node) node.outerHTML = cardHtml(fresh);
 }
 
 function startRename(btn) {
@@ -332,6 +382,26 @@ function startRename(btn) {
     if (e.key === 'Escape') commit(false);
   });
   input.addEventListener('blur', () => commit(true));
+}
+
+/** The "more" menu on a palette card. */
+function moreMenu(btn, p) {
+  showMenu(btn, [
+    ...paletteMoreItems(p),
+    '-',
+    { label: 'Unlock all colors', icon: ICONS.unlock, disabled: !hasLocks(p), onSelect: () => { unlockAll(p); afterEdit(p); } },
+  ], p.name);
+}
+
+function lockColor(p, index) {
+  const locked = toggleLock(p, index);
+  if (hasPalette(book, p.id)) { updatePalette(book, p); persistBook(); }
+  rerender(p);
+  haptic(8);
+  if (locked && !prefs.lockHint) {
+    toast('Locked colors stay put when you shuffle 🔒');
+    persistPrefs({ lockHint: true });
+  }
 }
 
 /* save to book */
@@ -409,8 +479,7 @@ async function usePhoto(file) {
   try {
     toast('Reading your photo…');
     const img = await loadImagePixels(file);
-    if (state.photo?.url) URL.revokeObjectURL(state.photo.url);
-    state.photo = { url: img.url, pixels: samplePixels(img.pixels) };
+    state.photo = { thumb: img.thumb, pixels: samplePixels(img.pixels) };
     if (state.mode !== 'photo') setMode('photo');
     generate({ stable: true });
     renderPhoto();
@@ -419,6 +488,13 @@ async function usePhoto(file) {
   } catch {
     toast('Sorry, that photo could not be read.');
   }
+}
+
+function clearPhoto() {
+  state.photo = null; // drops the pixels and the preview picture together
+  $('#photo-preview').removeAttribute('src');
+  renderPhoto();
+  if (state.mode === 'photo') { generate({ stable: true }); renderPalettes(); }
 }
 
 /* screen + single-pixel image picking */
@@ -440,22 +516,24 @@ function rgbStringToHex(s) {
   return m ? rgbToHex({ r: +m[1], g: +m[2], b: +m[3] }) : null;
 }
 
-function pickFromImage(file) {
+async function pickFromImage(file) {
   if (!file) return;
-  const img = new Image();
-  const url = URL.createObjectURL(file);
-  img.onload = () => {
-    const canvas = $('#image-canvas');
-    const max = Math.min(900, innerWidth - 64);
-    const scale = Math.min(1, max / img.width, (innerHeight * 0.65) / img.height);
-    canvas.width = Math.round(img.width * scale);
-    canvas.height = Math.round(img.height * scale);
-    canvas.getContext('2d', { willReadFrequently: true }).drawImage(img, 0, 0, canvas.width, canvas.height);
-    URL.revokeObjectURL(url);
-    $('#image-dialog').showModal();
-  };
-  img.onerror = () => toast('Sorry, that image could not be opened.');
-  img.src = url;
+  let decoded;
+  try {
+    decoded = await decodeImage(file);
+  } catch {
+    toast('Sorry, that image could not be opened.');
+    return;
+  }
+  const canvas = $('#image-canvas');
+  const k = Math.min(1, Math.min(900, innerWidth - 64) / decoded.width, (innerHeight * 0.65) / decoded.height);
+  const scratch = drawScaled(decoded, Math.max(decoded.width, decoded.height) * k);
+  canvas.width = scratch.width;
+  canvas.height = scratch.height;
+  canvas.getContext('2d', { willReadFrequently: true }).drawImage(scratch, 0, 0);
+  releaseCanvas(scratch);
+  closeBitmap(decoded.source);
+  $('#image-dialog').showModal();
 }
 
 function sampleImage(e) {
@@ -466,6 +544,25 @@ function sampleImage(e) {
   const [red, g, b] = canvas.getContext('2d').getImageData(x, y, 1, 1).data;
   $('#image-dialog').close();
   setBase(rgbToHex({ r: red, g, b }));
+}
+
+/* mood */
+
+function renderMood() {
+  const info = state.mood.info;
+  const note = $('#mood-note');
+  if (document.activeElement !== $('#mood-input')) $('#mood-input').value = state.mood.text;
+  if (!state.mood.text) note.textContent = 'Type a few words (a place, a food, a feeling, a season) and get palettes to match.';
+  else if (info?.fallback) note.textContent = 'I don\u2019t know those words yet, so here is a palette made from them anyway. Try a place, a food, the weather or a feeling.';
+  else if (info) note.textContent = `Understood: ${info.known.join(', ')}${info.unknown.length ? ` · Not sure about: ${info.unknown.join(', ')}` : ''}`;
+}
+
+function makeMood(text, { fresh = false } = {}) {
+  state.mood.text = text.trim().slice(0, 60);
+  generate({ stable: !fresh });
+  renderMood();
+  renderPalettes();
+  savePrefs();
 }
 
 /* ================= navigation ================= */
@@ -493,6 +590,20 @@ function navigate(target) {
   if (isBook) showBook();
   if (location.hash !== `#${target}`) history.replaceState(null, '', `#${target}`);
   scrollTo({ top: 0 });
+}
+
+/** A palette arrived in the address (a share link): show it and offer to keep it. */
+async function handleIncomingShare() {
+  const code = extractShareCode(location.hash);
+  if (!code) return;
+  const { openSharedPalette } = await import('./shareui.js');
+  openSharedPalette(code, {
+    onOpenInStudio: (p) => {
+      state.draft = { ...p, harmony: 'custom', source: 'custom' };
+      navigate('create');
+      setMode('build');
+    },
+  });
 }
 
 function editFromBook(id) {
@@ -534,6 +645,8 @@ function handlePaletteAction(e) {
       openColorPop(btn, p, p.colors.length, 'add');
       break;
     case 'remove': removeColor(p, Number(btn.dataset.index)); break;
+    case 'lock': lockColor(p, Number(btn.dataset.index)); break;
+    case 'more': moreMenu(btn, p); break;
     case 'swap': openColorPop(btn, p, Number(btn.dataset.index), 'swap'); break;
     case 'copyall': copyAllMenu(btn, p); break;
     case 'export': openExportSheet(p, state.shape); break;
@@ -556,13 +669,28 @@ function init() {
   renderThemes();
   renderMode();
   renderTotal();
+  const incomingShare = extractShareCode(location.hash);
+  $('#mood-suggest').innerHTML = SUGGESTIONS.slice(0, 8).map((x) => `<button type="button" class="fchip" data-mood="${esc(x)}">${esc(x)}</button>`).join('');
   generate({ stable: true });
+  renderMood();
   renderPalettes();
   updateBadge();
   initSheen();
   initExportSheet();
   initViewer();
   initBook();
+  // Cover pictures live in IndexedDB; once they are read, redraw the book if it is already on screen.
+  loadCoverImages().then(() => {
+    const o = getBookOpts();
+    const has = { book: !!coverImage('book'), deck: !!coverImage('deck') };
+    if (has.book !== o.covers.book.image || has.deck !== o.covers.deck.image) {
+      const next = JSON.parse(JSON.stringify(o));
+      next.covers.book.image = has.book;
+      next.covers.deck.image = has.deck;
+      setBookOpts(next, { silent: true });
+    }
+    if (!$('#view-book').hidden) renderBook();
+  });
   on('book', () => {
     updateBadge();
     // Stars on studio cards reflect the book.
@@ -643,6 +771,7 @@ function init() {
 
   $('#regen-all').addEventListener('click', (e) => {
     regenerate();
+    if (state.mode === 'mood') renderMood();
     if (state.mode === 'photo') renderPhoto();
     const icon = e.currentTarget.querySelector('svg');
     if (!reducedMotion()) icon.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(360deg)' }], { duration: 500, easing: 'ease-out' });
@@ -653,6 +782,9 @@ function init() {
   $('#eyedropper').addEventListener('click', pickFromScreen);
   $('#image-input').addEventListener('change', (e) => { pickFromImage(e.target.files[0]); e.target.value = ''; });
   $('#image-canvas').addEventListener('click', sampleImage);
+  // Empty the picking canvas as soon as the dialog closes.
+  $('#image-dialog').addEventListener('close', () => { const c = $('#image-canvas'); c.width = 0; c.height = 0; });
+  $('#photo-remove').addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); clearPhoto(); });
 
   // Photo mode: file picker and drag & drop.
   $('#photo-input').addEventListener('change', (e) => { usePhoto(e.target.files[0]); e.target.value = ''; });
@@ -678,7 +810,16 @@ function init() {
   $('#theme-select').addEventListener('change', (e) => pickTheme(e.target.value));
   $('#theme-grid').addEventListener('click', (e) => { const b = e.target.closest('[data-theme]'); if (b) pickTheme(b.dataset.theme); });
 
+  // Mood.
+  $('#mood-go').addEventListener('click', () => makeMood($('#mood-input').value));
+  $('#mood-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') makeMood(e.target.value); });
+  $('#mood-suggest').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-mood]');
+    if (b) makeMood(b.dataset.mood);
+  });
+
   // Builder.
+  $('#build-import').addEventListener('click', async () => (await import('./importui.js')).openImport({ sectionId: book.sections[0].id }));
   $('#build-add').addEventListener('click', (e) => {
     if (state.draft.colors.some((c) => c.hex === state.base)) { toast('That color is already in your palette.'); return; }
     if (addColors(state.draft, [state.base])) {
@@ -705,9 +846,15 @@ function init() {
   const start = location.hash.slice(1);
   navigate(['book', 'create'].includes(start) ? start : 'create');
 
-  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  }
+  if (incomingShare) handleIncomingShare();
+
+  initPwa();
+  const installBtn = $('#install-btn');
+  const syncInstall = () => { installBtn.hidden = !canInstall(); };
+  onPwaChange(syncInstall);
+  syncInstall();
+  installBtn.addEventListener('click', () => promptInstall());
+  $('#open-settings').addEventListener('click', async () => (await import('./settingsui.js')).openSettings());
 }
 
 init();

@@ -5,7 +5,8 @@ Last updated 04 October 2026
 
 > This must be reachable at a public URL before you can sell through the
 > Apple App Store or Google Play, and it is the document buyers look for
-> first. The app serves it at `legal.html?doc=privacy`.
+> first. The app serves it at `legal.html?doc=privacy`, and it works offline
+> because it is stored with the app.
 
 ---
 
@@ -15,9 +16,10 @@ Last updated 04 October 2026
 contains no tracking, analytics, telemetry, advertising or bundled extra
 software of any kind.**
 
-It has no account, no login and no server of ours behind it. Your colors,
-your photos and your swatch book stay on your device. We never sell data,
-because we never have any.
+It has no account, no login and no server of ours behind it. After the app
+has been opened once it works with **no internet connection at all**. Your
+colors, your photos, your pictures and your swatch book stay on your device.
+We never sell data, because we never have any.
 
 The rest of this document says the same thing at greater length, because
 that is what a privacy policy is for.
@@ -30,49 +32,71 @@ home, no usage metrics, no unique identifier, no advertising ID, and no
 
 ## 2. What stays on your device
 
-The app saves a few things in your browser's local storage (or the app's
-storage, on a phone or tablet). None of it is transmitted anywhere. You can
-delete it at any time by clearing the site's data in your browser settings,
-or by uninstalling the app.
+The app saves the following on your device, using your browser's own storage
+(or the app's storage, on a phone or tablet). None of it is transmitted
+anywhere.
 
-| What | Why |
-|---|---|
-| Your swatch book — saved palettes and tabs | so your collection is there next time |
-| Your settings — last color, style, number of colors, filters, theme | so the app opens the way you left it |
-| The palette you are building | so a half-made palette is not lost |
-| A copy of the app's own files | so it works offline |
+| What | Where | Why |
+|---|---|---|
+| Your swatch book: saved palettes, tabs and how the book or deck looks | local storage | so your collection is there next time |
+| Your settings: last color, style, number of colors, filters, theme, print choices, date of your last backup | local storage | so the app opens the way you left it |
+| The palette you are building | local storage | so a half-made palette is not lost |
+| Cover pictures you choose for the swatch book or deck, shrunk to a small size | IndexedDB | so your cover is there next time |
+| A copy of the app's own files, including its fonts and these documents | Cache Storage | so it works offline |
 
-**Clearing site data deletes your swatch book.** Export palettes you want to
-keep.
+The app **keeps no other files**. Anything it makes while you work, such as a
+picture you are reading, a preview, or the temporary link a download needs,
+exists only in memory and is let go as soon as it is used. Download links are
+released a few seconds after the file is saved.
 
-## 3. Your photos
+You can see what is stored, and delete the offline copy or everything, in
+**Settings** (the gear icon). You can also clear the site's data in your
+browser settings, or uninstall the app.
 
-When you use **Photo** mode or **Pick from image**, the picture is read
-**inside the app on your device** to find its colors. It is never uploaded,
-never sent to us and never stored after you leave the page.
+**Deleting this data deletes your swatch book.** Use **Back up** (in the
+Swatch Book menu or in Settings) to save a copy first. A backup is a file
+that you save and keep wherever you choose; see section 4.
 
-## 4. Copying, sharing and picking colors
+## 3. Your photos, pictures and files
+
+When you use **Photo** mode, **Pick from image**, a **cover picture**, or
+**Import**, the picture or file is read **inside the app on your device**. It
+is never uploaded and never sent to us. Photos used to find colors are not
+stored. A cover picture is shrunk and stored on your device only, until you
+remove it. Palette files from other apps are read on your device, and only
+the palettes you choose to import are kept.
+
+## 4. Copying, sharing, backing up and printing
 
 - **Copy** puts color codes on your device's clipboard. Nothing else reads it.
 - **Pick from screen** uses your browser's built-in eyedropper. The app
   receives only the one color you click.
-- **Share** (on phones and tablets) hands your exported file to your
-  device's own share sheet. Where it goes next is your choice.
+- **Share a palette** can make a link, a short code, or a QR code. These are
+  made on your device and **contain the palette itself** (its name and its
+  colors), not a pointer to a server. Whoever you give the link, code or QR
+  code to can see that palette. Nothing is stored by us, and nobody can see a
+  palette you have not shared. Where you send it is your choice.
+- **Export, Back up and Print & cut** make files on your device (palette
+  files, images, PDFs, SVGs, and flipbook or data backups) and hand them to
+  your browser to save. Where they are saved, and who can see them there, is
+  up to you. A backup contains your whole swatch book, including any cover
+  pictures, so keep it as private as you would keep the palettes themselves.
+- **Share a file** (on phones and tablets) hands your file to your device's
+  own share sheet. Where it goes next is your choice.
 
 ## 5. Network connections
 
-The app makes no connection to us. While you use it:
+The app makes **no connection to us and no connection to any third party**.
+It has no analytics, no advertising and no outside services. Its two
+typefaces are **bundled with the app**; nothing is loaded from Google Fonts or
+any other font service.
 
-- **Fonts.** The app's two typefaces are loaded from Google Fonts
-  (`fonts.googleapis.com` and `fonts.gstatic.com`). Like any web request,
-  that sends Google your IP address and browser details. Google states that
-  the Fonts service does not set cookies or log personal information for
-  advertising. See <https://developers.google.com/fonts/faq/privacy>.
-  *(Remove this paragraph if the fonts are bundled with the app instead.)*
-- **Hosting.** The web host that serves the app's files may keep standard
-  access logs — IP address, time and browser type — for security and
-  reliability, under its own privacy policy. We do not use those logs to
-  identify anyone.
+The only requests are for the app's own files, made to the web host that
+serves it, when you open the app online or when it checks for an update. Like
+any web host, that host may keep standard access logs — IP address, time and
+browser type — for security and reliability, under its own privacy policy. We
+do not use those logs to identify anyone. Once the app is stored on your
+device, it works without reaching that host at all.
 
 ## 6. Purchase information
 
@@ -93,8 +117,9 @@ personal information from them beyond what they choose to report.
 ## 7. Support correspondence
 
 If you email us, we keep the message so we can answer it and recognise a
-follow-up. Screenshots you send are used only to diagnose your problem and
-are deleted when the matter is closed.
+follow-up. Screenshots or backup files you send are used only to diagnose
+your problem and are deleted when the matter is closed. Please don't send a
+backup unless we ask for one.
 
 ## 8. Children
 
@@ -130,7 +155,8 @@ information gets lost.
 
 Color Palette PRO adds exactly one app to your device and nothing else. No
 toolbar, no browser extension, no "offer", no partner software and no
-background service. It does not change your browser or system settings.
+background service other than the one that lets the app work offline. It
+does not change your browser or system settings.
 
 ## 12. Changes
 

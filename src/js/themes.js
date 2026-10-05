@@ -75,8 +75,12 @@ export function generateThemeColors(themeId, n, seed = 1, flavor = 0) {
     const minDist = guard > 800 ? 10 : 24;
     if (out.every((c) => colorDistance(c, hex) >= minDist)) out.push(hex);
   }
-  // Group by hue, then light to dark inside each group, for a tidy chip row.
-  return out.sort((a, b) => {
+  return tidy(out);
+}
+
+/** Group by hue, then light to dark inside each group, for a tidy row of chips. */
+export function tidy(hexes) {
+  return [...hexes].sort((a, b) => {
     const A = hexToHsl(a), B = hexToHsl(b);
     const ga = A.s < 0.12 ? 999 : Math.round(A.h / 30), gb = B.s < 0.12 ? 999 : Math.round(B.h / 30);
     return ga - gb || B.l - A.l;

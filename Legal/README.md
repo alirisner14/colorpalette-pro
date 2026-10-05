@@ -82,13 +82,20 @@ The privacy policy makes strong promises. They're accurate today, and they
 need to stay accurate:
 
 - **No data leaves the device.** There's no analytics, no account and no
-  server. Photos are processed in the browser.
-- **The only third-party request is Google Fonts.** If you bundle the fonts,
-  delete that paragraph from the privacy policy.
-- **The swatch book lives in browser storage.** The EULA, Terms of Use,
-  Refund Policy and Getting Started all warn that clearing site data deletes
-  it. A "back up my swatch book" export would make this friendlier; it's on
-  the roadmap.
+  server. Photos, cover pictures and imported files are processed in the
+  browser. Share links and QR codes carry the palette itself, not a pointer.
+- **There are no third-party requests at all.** The fonts are bundled
+  (`licences/` holds their OFL texts), the app has no code libraries, and
+  once it has loaded it works offline. The only requests are for the app's own
+  files, to your host.
+- **What is stored, and where.** Local storage (swatch book, settings),
+  IndexedDB (cover pictures) and Cache Storage (the app's own files). Privacy
+  policy §2 lists them, Settings shows them, and "Delete all my data" removes
+  them. The app leaves no other files: temporary download links are released
+  seconds after use. If you add something that stores more, update §2.
+- **The swatch book lives on the device.** The EULA, Terms of Use, Refund
+  Policy and Getting Started all say that clearing site data deletes it, and
+  that **Back up** (a flipbook page or a data file) and **Restore** exist.
 
 **If you ever add analytics, accounts, cloud sync or licence-key checks,
 update `PRIVACY-POLICY.md` first.** An inaccurate privacy document is worse
@@ -164,6 +171,7 @@ screens lie.
 - **A short warranty statement** on the product page: "If it doesn't work in
   your browser within 30 days, we'll fix it or refund you."
 - **Supported browsers, stated plainly** (see `direct/INSTALL.md`).
-- **An export of the whole swatch book** for backups and for moving to a new
-  device. It answers the biggest support question before anyone asks it.
+- **A backup of the whole swatch book** — done: Swatch Book › More › Back up
+  (and Settings). It answers the biggest support question before anyone asks
+  it, and moves a book to a new device.
 - **An accessibility note** if you add colorblind previews or contrast checks.

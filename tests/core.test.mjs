@@ -109,6 +109,8 @@ test('swatches JSON follows the Procreate layout', () => {
 
 test('file names are sanitized', () => {
   assert.equal(safeFileName('Sunny: Day/Night?'), 'Sunny DayNight');
+  assert.equal(safeFileName('Kite   Disco'), 'Kite Disco', 'only whitespace is collapsed');
+  assert.equal(safeFileName('Sassy Sunset: Skies\\Hills'), 'Sassy Sunset SkiesHills', 'the letter s is left alone');
   assert.equal(safeFileName(''), 'palette');
 });
 

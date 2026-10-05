@@ -10,3 +10,4 @@ android/app/build/
 ios/App/Pods/
 # Local tooling
 .claude/
+.scratch/

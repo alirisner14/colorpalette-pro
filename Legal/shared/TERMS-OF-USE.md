@@ -11,11 +11,13 @@ point, the EULA wins.
 
 ## 1. What Color Palette PRO is
 
-Color Palette PRO is a color palette builder that runs in your web browser
-and can be added to your home screen. You choose a color, a photo or a theme,
-and it suggests palettes based on classic color harmonies, gives every color
-a name and its HEX and RGB codes, saves your favorites in a swatch book, and
-exports them as files for other apps.
+Color Palette PRO is a color palette builder that runs in your web browser,
+can be added to your home screen, and **works offline**. You choose a color, a
+photo, a mood or a theme, and it suggests palettes based on classic color
+harmonies, gives every color a name and its HEX and RGB codes, saves your
+favorites in a swatch book (a flipbook, or a fan deck of blades), shows your
+palette on example artwork, makes printable and cuttable swatch sheets, and
+exports palettes as files for other apps.
 
 **It is a tool, not a service.** Everything happens on your device. There is
 no account, no cloud storage and no connection to us.
@@ -36,8 +38,8 @@ anyone else in one.
 are themselves unlawful to possess.
 
 **3.3** You must not copy, scrape, extract or republish the Software's code,
-word lists, color and palette naming system, themes or swatch shapes, or use
-them to build a competing product.
+word lists, color and palette naming system, themes, swatch shapes, example
+artwork or layouts, or use them to build a competing product.
 
 **3.4** You must not use any part of the Software to train or evaluate an AI
 or machine-learning system.
@@ -48,12 +50,13 @@ offer the Software to others as a service.
 **3.6** You must not attempt to interfere with, overload or gain unauthorised
 access to any server that delivers the Software.
 
-## 4. Photos you use
+## 4. Photos and pictures you use
 
-Photos are processed on your device and never uploaded (see the
-[Privacy Policy](PRIVACY-POLICY.md)). Taking colors from a photo does not
-give you any right to the photo itself. If you use someone else's image as
-inspiration, the palette is yours; the image is still theirs.
+Photos and pictures (including a cover picture) are processed on your device
+and never uploaded (see the [Privacy Policy](PRIVACY-POLICY.md)). Taking
+colors from a photo does not give you any right to the photo itself. If you
+use someone else's image as inspiration, or on a cover, the palette is yours;
+the image is still theirs.
 
 ## 5. Exports and other applications
 
@@ -68,6 +71,21 @@ its import format is not a defect in the Software.
 owners have not endorsed Color Palette PRO, and we are not affiliated with
 them.
 
+**5.3** You can also bring palettes in from files made by other applications
+(for example `.ase`, `.aco`, `.gpl` and `.swatches` files). Only import files you
+have the right to use. Files are read on your device.
+
+**5.4 Printing and cutting.** The Software can make PDF, SVG, PNG and JPG
+files of swatch decks, swatch books and cards for you to print or to cut with
+a cutting machine. Printers, papers, inks, cutting machines and their
+software vary, and so does what they accept. Print at 100% size, test a sheet
+first, and cut a small test before a big job. We do not guarantee how a file
+will print or cut on any particular equipment. The example artwork and
+layouts are for your own use and projects; see section 4.3 of the EULA.
+
+**5.5 Sharing.** A share link, code or QR code contains the palette itself.
+Share only what you are happy for the recipient to see and keep.
+
 ## 6. Color accuracy
 
 The colors you see depend on your screen, its settings and its lighting, and
@@ -77,16 +95,20 @@ names are playful suggestions, not standard or trade color names.
 
 ## 7. Your swatch book lives on your device
 
-Your swatch book is stored in your browser or app storage. Clearing site
-data, browsing privately, switching browsers or devices, or uninstalling the
-app can remove it, and we cannot restore it. **Export anything you would hate
-to lose.**
+Your swatch book, settings and cover pictures are stored in your browser or
+app storage. Clearing site data, browsing privately, switching browsers or
+devices, using the delete options in Settings, or uninstalling the app can
+remove them, and we cannot restore them. **Back up anything you would hate to
+lose.** The Software can save your whole swatch book as a flipbook page
+(`.html`) or a data file (`.json`), and can restore from either. Keep your
+backups somewhere safe.
 
 ## 8. Browser features
 
 Some features depend on what your browser supports. For example, **Pick from
-screen** needs a browser with a built-in eyedropper, and sharing files needs
-a device with a share sheet. Where a feature is unavailable, the app offers
+screen** needs a browser with a built-in eyedropper, sharing files needs a
+device with a share sheet, and working offline needs a browser that allows
+offline apps (and the app opened from its web address, not as a file). Where a feature is unavailable, the app offers
 an alternative. A missing optional feature in a particular browser is not a
 defect.
 

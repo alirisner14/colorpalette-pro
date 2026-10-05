@@ -1,5 +1,6 @@
 // Shared app state, book persistence and a tiny event bus.
 import { normalizeBook } from './book.js';
+import { normalizeOpts } from './bookopts.js';
 import { loadBook, saveBook, loadFavorites, clearFavorites, loadPrefs, savePrefs } from './storage.js';
 import { toast } from './ui.js';
 
@@ -25,4 +26,23 @@ export function persistBook() {
 export function persistPrefs(patch) {
   Object.assign(prefs, patch);
   savePrefs(prefs);
+}
+
+/** Replace the whole swatch book (restoring a backup) without changing the `book` object other modules hold. */
+export function replaceBook(next) {
+  book.sections = next.sections;
+  book.palettes = next.palettes;
+  persistBook();
+}
+
+/* How the swatch book and deck look (layout, shapes, what to show, covers). */
+let opts = normalizeOpts(prefs.bookOpts);
+export const getBookOpts = () => opts;
+
+/** Save new look-and-feel options. `silent` skips telling the views (they redraw once when a dialog closes). */
+export function setBookOpts(next, { silent = false } = {}) {
+  opts = normalizeOpts(next);
+  persistPrefs({ bookOpts: opts });
+  if (!silent) emit('bookopts');
+  return opts;
 }

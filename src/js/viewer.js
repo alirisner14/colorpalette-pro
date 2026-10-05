@@ -3,10 +3,10 @@ import { readableText, rgbString } from './color.js';
 import { typeLabel } from './harmonies.js';
 import { FORMATS } from './formats.js';
 import { sectionOf } from './book.js';
-import { book, emit } from './store.js';
+import { book, emit, on } from './store.js';
 import { $, esc, ICONS, copyText, showMenu, reducedMotion, haptic } from './ui.js';
 import { formatButton, runExport, openExportSheet } from './exportsheet.js';
-import { readingOrder, removeWithUndo, revealInBook } from './bookview.js';
+import { readingOrder, removeWithUndo, revealInBook, cardMenu } from './bookview.js';
 import { rgbCss } from './render.js';
 
 const QUICK = ['procreate', 'ase', 'aco', 'gpl', 'svg', 'canva', 'jpg', 'png'];
@@ -114,6 +114,9 @@ export function initViewer() {
     if (b) runExport(p, b.dataset.format, 'chip');
   });
   $('#v-copy').addEventListener('click', (e) => copyAllMenu(e.currentTarget, book.palettes[currentId]));
+  $('#v-more').addEventListener('click', (e) => cardMenu(e.currentTarget, currentId, { inViewer: true }));
+  // Moving or renaming a palette from the menu changes what the header shows.
+  on('book', () => { if (!v.hidden && book.palettes[currentId]) render(currentId); });
   $('#v-edit').addEventListener('click', () => { const id = currentId; closeViewer(); emit('edit-palette', id); });
   $('#v-delete').addEventListener('click', () => {
     const id = currentId;

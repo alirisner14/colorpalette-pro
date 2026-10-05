@@ -25,6 +25,8 @@ export function typeLabel(p) {
   if (id.startsWith('theme:')) return getTheme(id.slice(6)).label;
   if (id === 'photo-pure') return 'Straight from your photo';
   if (id === 'custom') return 'Handmade';
+  if (id === 'imported') return 'Imported';
+  if (id === 'mood') return 'From your words';
   return getHarmony(id)?.label ?? 'Palette';
 }
 

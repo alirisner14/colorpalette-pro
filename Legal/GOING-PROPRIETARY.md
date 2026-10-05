@@ -45,8 +45,8 @@ Otherwise you don't own all of what you sell.
 
 ## What stays open regardless
 
-- **Grandstander and Nunito** keep their SIL Open Font License. Once you
-  bundle the font files, ship the OFL text with them.
+- **Grandstander and Nunito** keep their SIL Open Font License. The font files
+  are bundled, and their OFL texts ship in `Legal/licences/`. Keep them there.
 - **Capacitor** and any plugins used for the mobile apps keep their own
   licences (mostly MIT). List them in `shared/THIRD-PARTY-LICENCES.md`.
 
@@ -54,7 +54,8 @@ Keeping your own code proprietary doesn't release you from any of these.
 
 ## Reassuring buyers without opening the code
 
-The privacy promise is easy to check: the app makes no network requests
-except for fonts, and anyone can confirm that in the browser's Network tab.
-Say so on the product page. It's the strongest trust signal you have, and
+The privacy promise is easy to check: after it has loaded, the app makes no
+network requests at all (the fonts are bundled), and anyone can confirm that
+in the browser's Network tab, or by switching to airplane mode and watching
+it keep working. Say so on the product page. It's the strongest trust signal you have, and
 it costs nothing.

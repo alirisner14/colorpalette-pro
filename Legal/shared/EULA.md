@@ -14,8 +14,8 @@ Applies to the version you purchased — last updated 04 October 2026
 This End User Licence Agreement ("Agreement") is between you ("you") and
 Alison Risner, trading as On the Rise Digital ("we", "us"), covering the
 application called Color Palette PRO, including the web app, any version you
-add to your home screen or install on a device, its updates and its
-documentation ("the Software").
+add to your home screen or install on a device, its offline copy, its updates
+and its documentation ("the Software").
 
 By opening, installing, copying or using the Software you accept this
 Agreement. If you do not accept it, do not use the Software, and contact
@@ -36,6 +36,10 @@ The licence is held by you, not by a device.
 
 **2.3** Keep backup copies of the Software and of anything you export from it.
 
+**2.4** Print and cut the swatch decks, swatch books, paint-chip cards and
+sheets you make with the Software, and save, print and use pictures from its
+example artwork, for your own use and your own projects (see section 4.3).
+
 ## 3. What you may not do
 
 **3.1 No sharing the Software with others.** Your licence is for one person.
@@ -54,15 +58,15 @@ means. This includes bundling it with anything else and posting it anywhere
 others can obtain it.
 
 **3.4 No AI or dataset use.** You may not use the Software, its source code,
-its color-naming and palette-naming word lists, its themes, its
-documentation, or any part of it as training data, as input to a machine
+its color-naming and palette-naming word lists, its themes, its example
+artwork, its documentation, or any part of it as training data, as input to a machine
 learning or AI system, or for the purpose of building, training,
 fine-tuning, evaluating or benchmarking any model. You may not submit any
 part of it to a dataset, corpus or model repository.
 
 **3.5 No copying its parts into another product.** You may not extract the
-Software's word lists, naming system, swatch shapes, themes or code to build
-a competing product or service.
+Software's word lists, naming system, swatch shapes, themes, example artwork,
+layouts or code to build a competing product or service.
 
 **3.6 No reverse engineering**, decompiling or disassembling the Software,
 nor attempting to derive its source code, except to the extent that this
@@ -88,6 +92,15 @@ you create with them. You may use them for any lawful purpose, including
 commercially, without credit to us. The color and palette names the
 Software suggests may be used freely as part of your palettes.
 
+**4.3 Example artwork and templates.** The example artwork ("Palette in
+context") and the layouts for decks, books and printable sheets are ours. You
+may print, cut and use what you make with them, including pictures you save
+from the example artwork, for your own use and in your own projects. You may
+not sell, give away or distribute the example artwork on its own, or the
+Software's blank templates and layouts as products or files in their own
+right. A swatch deck, book or sheet made from your own palettes and your own
+supplies is your work and is yours to use, give or sell.
+
 ## 5. Third-party components and trademarks
 
 **5.1** The Software uses the Grandstander and Nunito typefaces, each under
@@ -100,7 +113,11 @@ Adobe, Photoshop, Illustrator, InDesign, Affinity, CorelDRAW, Canva, Figma,
 Sketch, GIMP, Krita, Inkscape, Aseprite, Paint.NET, Cricut, Coolors and other
 names mentioned in the Software are trademarks of their respective owners.
 They are named only to describe compatibility. **We are not affiliated with,
-endorsed by or sponsored by any of them.**
+endorsed by or sponsored by any of them.** QR Code is a registered trademark
+of DENSO WAVE INCORPORATED.
+
+**5.3** The Software contains no third-party code libraries. Its two
+typefaces are bundled with it, so it makes no connection to any font service.
 
 ## 6. Your content
 
@@ -108,18 +125,37 @@ endorsed by or sponsored by any of them.**
 device** and are not uploaded to us. You are responsible for having the right
 to use any image you open.
 
-**6.2** Your swatch book, settings and palettes are stored in your browser or
-on your device. **Clearing your browser's site data, using a private window,
-or uninstalling the app can delete them.** Export palettes you want to keep.
-We cannot recover data we never receive.
+**6.2** Your swatch book, settings, palettes and cover pictures are stored in
+your browser or on your device. **Clearing your browser's site data, using a
+private window, using the delete options in Settings, or uninstalling the app
+can delete them.** The Software lets you back up your swatch book (as a
+flipbook page or a data file) and restore it. Keep your backups somewhere
+safe; they are your safety net. We cannot recover data we never receive.
 
-## 7. Colors on screen
+**6.3** The Software keeps nothing on your device beyond what is described in
+the Privacy Policy, and removes the temporary items it makes while you work.
+You can delete the offline copy or everything it stored, at any time, in
+Settings.
+
+**6.4** A share link, share code or QR code made by the Software contains the
+palette itself. Anyone you give it to can see that palette and use it as they
+like. You are responsible for what you choose to share, and for the backups
+and exported files you save, which are as private or public as the place you
+keep them.
+
+## 7. Colors on screen and on paper
 
 Screens, browsers, printers and materials all reproduce color differently.
 The Software shows colors as your device displays them. It is a creative
 tool, **not a color-matching or color-management system**, and is not a
 substitute for physical swatches, printed proofs or a calibrated workflow
 where exact color matters.
+
+Printed swatch sheets depend on your printer, ink, paper and settings (print
+at 100% size, and test a page first). Cut files depend on your cutting
+machine, its software and your material, and we cannot promise that a file
+will cut or register correctly on any particular machine. Test a sheet before
+you cut a large job.
 
 ## 8. Updates
 
@@ -137,8 +173,9 @@ FITNESS FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT.**
 We do not warrant that the Software will work in every browser or on every
 device, that every optional feature (such as picking a color from the screen)
 is available everywhere, that exported files will import into any particular
-version of another application, or that the Software will be uninterrupted or
-error-free. Other applications and browsers change, and we do not control
+version of another application, that printed or cut files will match your
+screen or work with any particular printer or cutting machine, or that the
+Software will be uninterrupted or error-free. Other applications and browsers change, and we do not control
 them.
 
 Some jurisdictions do not allow the exclusion of implied warranties, so some

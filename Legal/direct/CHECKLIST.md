@@ -25,6 +25,12 @@ This is a web app, so "delivery" means one of these:
 **A is the usual starting point.** Whatever you choose, update section 5 of
 `TERMS-OF-SALE.md` and §5 of `PRIVACY-POLICY.md` to match.
 
+**Building what you host or sell.** Run `npm run build`. It writes `dist/`,
+which holds exactly the public files (the app, the fonts, the public legal
+documents) and none of the internal notes in this folder. Upload `dist/` to
+your host, or zip it for option B. The app stores itself on the buyer's device
+the first time it loads online, then works with no connection.
+
 ## Pick a payment provider
 
 | | Merchant of record | Fee | Notes |
@@ -65,11 +71,17 @@ grep -rn "\[[A-Z ]*\]" Legal/
 Nothing ships until that search comes back clean, apart from the two
 analytics placeholders in Cookie Notice Version B.
 
-## Before launch: privacy and fonts
+## Before launch: privacy and offline
 
-- [ ] Decide whether to keep Google Fonts or bundle the fonts. Bundling gives
-      fully offline first launch and lets you delete the Google Fonts
-      paragraph from the privacy policy. If you bundle them, ship `OFL.txt`.
+- [x] The fonts are bundled and the OFL texts ship in `licences/`, so the
+      privacy policy says nothing is loaded from Google Fonts or anywhere
+      else. Check that stays true: open the app, then look in the browser's
+      Network tab; every request should be to your own host.
+- [ ] Load the hosted app once, switch the device to airplane mode, and
+      reload. It should open normally, and Settings should say "Works
+      offline".
+- [ ] Settings › Stored on this device: confirm it lists only what the
+      privacy policy §2 lists.
 
 ## The product page
 
@@ -78,8 +90,9 @@ analytics placeholders in Cookie Notice Version B.
       chips, the swatch book, the export sheet
 - [ ] Supported browsers, stated plainly
 - [ ] The apps it exports to, with the "not affiliated" line
-- [ ] **What it doesn't do**: colors stay on one device, and screen colors
-      aren't print-matched. Being honest here prevents refunds later.
+- [ ] **What it doesn't do**: colors stay on one device (say that the
+      backup exists), and screen colors aren't print-matched. Being honest
+      here prevents refunds later.
 - [ ] Price, with tax handling made clear
 - [ ] Links to the refund policy, EULA and privacy policy
 - [ ] An email address that works
@@ -91,6 +104,11 @@ analytics placeholders in Cookie Notice Version B.
 - [ ] Open it on an iPhone, an iPad, an Android phone and a Windows/Mac
       browser. Add it to the home screen on each.
 - [ ] Import an export into Procreate, Photoshop and Canva yourself.
+- [ ] Back up your swatch book (flipbook page and data file), clear the
+      site's data, and restore. Open the flipbook page with the internet off.
+- [ ] Print a swatch sheet at 100% size. If you promote cutting, cut a test
+      deck and book on the machine you name (the SVG "cut lines only" file,
+      or the transparent PNG for Print Then Cut).
 - [ ] Refund yourself and confirm the process works.
 
 ## After launch

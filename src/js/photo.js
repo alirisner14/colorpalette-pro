@@ -1,6 +1,8 @@
 // Pull a palette out of a photo. The math works on a flat RGBA array so it
 // runs in Node tests; loadImagePixels() is the browser-only part.
 import { rgbToHex, colorDistance, makeRng, hexToHsl } from './color.js';
+import { decodeImage, drawScaled } from './imageutil.js';
+import { closeBitmap, releaseCanvas } from './lifecycle.js';
 
 /** Sample opaque pixels as [r, g, b] triples, skipping by `step`. */
 export function samplePixels(rgba, step = 1) {
@@ -103,22 +105,22 @@ export function extractPhotoColors(pixels, n, seed = 1) {
   return out;
 }
 
-/** Browser only: read a File into a small RGBA array plus a preview URL. */
-export function loadImagePixels(file, maxSide = 160) {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
-      const w = Math.max(1, Math.round(img.width * scale));
-      const h = Math.max(1, Math.round(img.height * scale));
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d', { willReadFrequently: true });
-      ctx.drawImage(img, 0, 0, w, h);
-      resolve({ pixels: ctx.getImageData(0, 0, w, h).data, url, width: img.width, height: img.height });
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read image')); };
-    img.src = url;
-  });
+/**
+ * Browser only: read a File into a small RGBA array plus a small preview
+ * picture (a data URL, so there is nothing to revoke later). The full-size
+ * photo is decoded once, scaled down, and released straight away.
+ */
+export async function loadImagePixels(file, maxSide = 160, previewSide = 640) {
+  const decoded = await decodeImage(file);
+  const small = drawScaled(decoded, maxSide);
+  try {
+    const pixels = small.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, small.width, small.height).data;
+    const preview = drawScaled(decoded, previewSide);
+    const thumb = preview.toDataURL('image/jpeg', 0.85);
+    releaseCanvas(preview);
+    return { pixels, thumb, width: decoded.width, height: decoded.height };
+  } finally {
+    releaseCanvas(small);
+    closeBitmap(decoded.source);
+  }
 }

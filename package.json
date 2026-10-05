@@ -8,7 +8,10 @@
   "type": "module",
   "scripts": {
     "start": "node scripts/serve.mjs",
-    "test": "node --test"
+    "test": "node --test",
+    "shell": "node scripts/shell.mjs",
+    "shell:check": "node scripts/shell.mjs --check",
+    "build": "node scripts/build.mjs"
   },
   "engines": {
     "node": ">=20"

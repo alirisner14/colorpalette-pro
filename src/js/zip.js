@@ -10,6 +10,63 @@ const CRC_TABLE = (() => {
   return t;
 })();
 
+const MAX_ENTRY_BYTES = 25 * 1024 * 1024; // refuse anything that unpacks to more than this
+
+/** Inflate raw-deflate data in the browser (or Node), stopping at a safe size. */
+async function inflateRaw(bytes) {
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  const reader = stream.getReader();
+  const chunks = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.length;
+    if (total > MAX_ENTRY_BYTES) { await reader.cancel(); throw new Error('That file unpacks to something too large.'); }
+    chunks.push(value);
+  }
+  const out = new Uint8Array(total);
+  let p = 0;
+  for (const c of chunks) { out.set(c, p); p += c.length; }
+  return out;
+}
+
+/**
+ * Read a .zip file. Returns a Map of file name → async function giving its bytes.
+ * Handles stored and deflated entries, which covers every file this app reads.
+ */
+export function readZip(bytes) {
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let eocd = -1;
+  for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 22 - 65535); i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error('That does not look like a zip file.');
+  const count = dv.getUint16(eocd + 10, true);
+  let p = dv.getUint32(eocd + 16, true);
+  if (count > 500) throw new Error('That zip has too many files.');
+  const files = new Map();
+  for (let n = 0; n < count; n++) {
+    if (p + 46 > bytes.length || dv.getUint32(p, true) !== 0x02014b50) throw new Error('That zip file is damaged.');
+    const method = dv.getUint16(p + 10, true);
+    const csize = dv.getUint32(p + 20, true);
+    const nlen = dv.getUint16(p + 28, true);
+    const elen = dv.getUint16(p + 30, true);
+    const clen = dv.getUint16(p + 32, true);
+    const local = dv.getUint32(p + 42, true);
+    const name = new TextDecoder().decode(bytes.subarray(p + 46, p + 46 + nlen));
+    p += 46 + nlen + elen + clen;
+    const start = local + 30 + dv.getUint16(local + 26, true) + dv.getUint16(local + 28, true);
+    const raw = bytes.subarray(start, start + csize);
+    files.set(name, async () => {
+      if (method === 0) return raw;
+      if (method === 8) return inflateRaw(raw);
+      throw new Error('That zip uses a compression this app does not read.');
+    });
+  }
+  return files;
+}
+
 export function crc32(bytes) {
   let c = 0xffffffff;
   for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);

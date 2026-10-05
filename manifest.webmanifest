@@ -1,7 +1,10 @@
 {
+  "id": "./",
   "name": "Color Palette PRO",
   "short_name": "Palette PRO",
-  "description": "Pick a color and get beautiful, named color palettes built from classic color harmonies.",
+  "description": "Pick a color, a photo, a theme or a mood and get beautiful, named color palettes. Works fully offline.",
+  "lang": "en",
+  "dir": "ltr",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -9,8 +12,15 @@
   "background_color": "#F2FAFF",
   "theme_color": "#1E40AF",
   "categories": ["design", "productivity", "graphics"],
+  "launch_handler": { "client_mode": "focus-existing" },
+  "shortcuts": [
+    { "name": "New palette", "short_name": "New", "url": "./index.html#create", "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Swatch Book", "short_name": "Book", "url": "./index.html#book", "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192" }] }
+  ],
   "icons": [
     { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

@@ -4,9 +4,10 @@
 Last updated 04 October 2026
 
 > **Only needed if your website sets cookies.** The *app* sets no cookies;
-> it keeps your swatch book in browser local storage, which is strictly
-> necessary for a feature you asked for and is covered in the Privacy
-> Policy. This notice is about the website.
+> it keeps your swatch book and settings in your browser's local storage, your
+> cover pictures in IndexedDB, and a copy of its own files for offline use,
+> all strictly necessary for features you asked for and covered in the
+> Privacy Policy. This notice is about the website.
 >
 > Pick the version below that matches what you actually run, delete the
 > other, and delete this note. Do not publish a notice describing cookies you
@@ -30,8 +31,9 @@ Use this if your site is plain pages and a checkout link.
 > their own privacy policy.
 >
 > The Color Palette PRO app itself sets no cookies. It saves your swatch
-> book and settings in your browser's local storage, on your device only,
-> because you asked it to — see the Privacy Policy.
+> book, settings and cover pictures in your browser's storage, on your device
+> only, because you asked it to, and keeps a copy of its own files so that it
+> works offline — see the Privacy Policy.
 >
 > That is the whole of it. There is no banner to click because there is
 > nothing to consent to.

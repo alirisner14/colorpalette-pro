@@ -56,7 +56,9 @@ beforehand — we would rather answer ten questions than process one refund.
 **3.3 Another app changed what it imports.** Color Palette PRO exports files
 for apps made by other companies, who can change their formats. That is a
 limitation we state plainly before you buy; it is not a defect. Tell us and
-we will try to update the export.
+we will try to update the export. The same goes for printing and cutting: how a
+sheet prints or cuts depends on your printer, cutting machine and their
+software.
 
 **3.4 An optional feature is not available in your browser** — for example,
 picking a color from the screen, which only some browsers support. The app
@@ -64,7 +66,8 @@ offers an alternative where a feature is missing.
 
 **3.5 You lost your swatch book** by clearing your browser data, using a
 private window, or uninstalling the app. Palettes are stored on your device,
-and the app tells you to export anything you want to keep.
+and the app lets you back up your swatch book (and reminds you to) so you can
+restore it.
 
 **3.6 You want it to do something it does not do.** Feature requests are
 welcome. They are not grounds for a refund.

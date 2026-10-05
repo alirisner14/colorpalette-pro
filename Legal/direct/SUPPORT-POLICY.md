@@ -36,6 +36,9 @@ store page rather than answering the same email a hundred times.
 ## What support covers
 
 - Opening the app, adding it to your home screen, and using it offline.
+- Backing up and restoring your swatch book, and importing palette files.
+- Questions about the files the app makes for printing and cutting (sizes,
+  hole positions, which file to choose).
 - Diagnosing errors and things that look wrong.
 - Exports that will not import — we will check the file and fix the app if
   it is our bug.
@@ -50,7 +53,10 @@ store page rather than answering the same email a hundred times.
 - **Other companies' apps.** We will make our files match their published
   formats, but we cannot support Procreate, Adobe, Canva or any other app.
 - **Recovering a deleted swatch book.** It lives on your device, and we never
-  receive a copy. Export palettes you want to keep.
+  receive a copy. **Back it up** (Swatch Book › More › Back up, or Settings);
+  with a backup file we can help you restore it.
+- **Your printer, cutting machine or its software.** We can help with our
+  files; we cannot support Cricut, Silhouette, your printer or their apps.
 - **Color matching for print or manufacturing.** See the EULA, section 7.
 - **Custom development** or features built for one customer.
 - **Unsupported browsers** — anything older than the stated requirements.
