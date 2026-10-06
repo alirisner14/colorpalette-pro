@@ -8,6 +8,18 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 Nothing yet.
 
+## [1.0.2] — 2026-10-06
+
+### Fixed
+- The dashboard showed 7 palettes and 7 near-copies of them, and **Shuffle** barely changed a palette. Every harmony now comes in several looks (classic, soft, deep, muted, vivid, airy, dusk and contrast), so the two palettes of a harmony are clearly different, and no palette in a batch (or a theme set) is a near-copy of another.
+- **Shuffle** now always gives a really different take on the palette (new tones, spread, saturation and hue drift) while keeping your color and any locked colors. **Shuffle all** turns every harmony to a new look.
+
+### Added
+- A **Show artwork** button on every palette card and in the full-screen viewer, which opens "Palette in context" (artwork and mockups painted with the palette).
+
+### Changed
+- Hearts, stars, clouds and the two scribble shapes (Abstract and Messy Swatches) now use the supplied artwork. The cloud no longer looks like a flower, and the scribbles take turns facing each way.
+
 ## [1.0.1] — 2026-10-05
 
 ### Fixed

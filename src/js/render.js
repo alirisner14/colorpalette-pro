@@ -51,10 +51,11 @@ export function swatchHtml(p, c, i, shapeId, opts = {}) {
  * A palette card. `actions` is a list of action ids rendered as icon buttons:
  * star, shuffle, add, copyall, export, more. Anything else is inserted as raw HTML.
  */
-export function paletteHtml(p, { shapeId = 'chip', saved = false, editable = true, lockable = true, actions = ['star', 'shuffle', 'add', 'copyall', 'export', 'more'], maxColors = MAX_COLORS, extraClass = '' } = {}) {
+export function paletteHtml(p, { shapeId = 'chip', saved = false, editable = true, lockable = true, actions = ['star', 'art', 'shuffle', 'add', 'copyall', 'export', 'more'], maxColors = MAX_COLORS, extraClass = '' } = {}) {
   const blurb = getHarmony(p.harmony)?.blurb ?? '';
   const locks = hasLocks(p);
   const btn = {
+    art: `<button type="button" class="btn btn-glass btn-sm art-btn" data-action="art" data-pid="${p.id}" aria-label="Show this palette on artwork and mockups" title="See this palette on example artwork and mockups" ${p.colors.length ? '' : 'disabled'}>${ICONS.art}<span>Show artwork</span></button>`,
     star: `<button type="button" class="icon-btn star ${saved ? 'is-on' : ''}" data-action="star" data-pid="${p.id}" aria-pressed="${saved}" aria-label="${saved ? 'Saved in' : 'Save to'} swatch book" title="${saved ? 'Saved — tap to remove' : 'Save to swatch book'}">${ICONS.star}</button>`,
     shuffle: `<button type="button" class="icon-btn" data-action="shuffle" data-pid="${p.id}" aria-label="${locks ? 'Shuffle the unlocked colors' : 'Shuffle this palette'}" title="${locks ? 'Shuffle (locked colors stay)' : 'Shuffle'}">${ICONS.shuffle}</button>`,
     add: `<button type="button" class="icon-btn" data-action="add" data-pid="${p.id}" aria-label="Add a color" title="Add a color" ${p.colors.length >= maxColors ? 'disabled' : ''}>${ICONS.plus}</button>`,

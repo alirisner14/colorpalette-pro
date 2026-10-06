@@ -31,6 +31,9 @@
 - **Harmonies:** Complementary, Analogous, Triadic, Tetradic, Split Complementary, Monochrome and Random.
   By default you get **2 of each**. You can filter to the harmonies you want and set how many palettes to show (1–40).
 - **Size:** 6–15 colors per palette.
+- **Variety:** every harmony comes in several looks (classic, soft, deep, muted, vivid, airy, dusk, contrast), so the palettes on
+  your dashboard, and every shuffle, are really different.
+- **Mockups:** every palette has a **Show artwork** button that paints it onto example artwork and mockups.
 - **Names:** every color gets a cute, unique name and every palette a fitting name. Names can be edited.
 - **Codes:** every color shows its **HEX and RGB**; tap either to copy. A palette's copy menu copies all its HEX codes, all its RGB codes, or names with both.
 - **Lock colors:** lock the colors you love, then shuffle for new ones. Locked colors stay put.

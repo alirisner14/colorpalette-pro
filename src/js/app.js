@@ -1,6 +1,6 @@
 import { normalizeHex, readableText, hslToHex, hexToHsl, rgbString, rgbToHex, parseColorCodes } from './color.js';
 import {
-  HARMONIES, MIN_COLORS, MAX_COLORS, generateColors, swapOptions, harmonyPlan, PER_TYPE_DEFAULT,
+  HARMONIES, MIN_COLORS, MAX_COLORS, STYLES, generateBatch, generateDistinct, pickDistinct, swapOptions, harmonyPlan, PER_TYPE_DEFAULT,
 } from './harmonies.js';
 import { nameColor, nameColors, namePalette } from './names.js';
 import { SHAPES, getShape } from './shapes.js';
@@ -77,11 +77,21 @@ function generate(opts = {}) {
   if (state.palettes.length && prev.some(hasLocks)) state.palettes = carryLocks(prev, state.palettes);
 }
 
-function generateFresh({ stable = false } = {}) {
+/**
+ * @param {{ stable?: boolean, live?: boolean }} opts `stable` makes the same start give the same batch;
+ *   `live` is for frames while the color wheel is being dragged (no look-for-near-copies pass, so nothing jumps).
+ */
+function generateFresh({ stable = false, live = false } = {}) {
   const taken = new Set();
   const seedFor = (i) => (stable ? 7919 * (i + 1) : randSeed());
+  // A stable batch always starts with the classic look; "shuffle all" turns every harmony to a new one.
+  const shift = stable ? 0 : 1 + Math.floor(Math.random() * (STYLES.length - 1));
+  /** One palette per entry of `plan`: each of a harmony's palettes gets a different look, and none copies an earlier one. */
+  const harmonyBatch = (plan, baseFor, source, seen = []) => generateBatch(plan, baseFor, state.count, {
+    seedFor, shift, distinct: !live, seen,
+  }).map(({ harmony, base, hexes }) => makePalette(harmony, hexes, taken, { base, source }));
   if (state.mode === 'color') {
-    state.palettes = planFor(state.total).map((h, i) => makePalette(h, generateColors(state.base, h, state.count, seedFor(i)), taken, { base: state.base, source: 'color' }));
+    state.palettes = harmonyBatch(planFor(state.total), () => state.base, 'color');
   } else if (state.mode === 'photo') {
     if (!state.photo) { state.palettes = []; return; }
     const pure = extractPhotoColors(state.photo.pixels, state.count, 7);
@@ -92,10 +102,7 @@ function generateFresh({ stable = false } = {}) {
     // "Palettes to show" counts the photo palette too.
     const rest = state.total ? state.total - 1 : 0;
     const plan = state.total && rest === 0 ? [] : planFor(rest);
-    state.palettes = [first, ...plan.map((h, i) => {
-      const base = bases[i % bases.length];
-      return makePalette(h, generateColors(base, h, state.count, seedFor(i)), taken, { base, source: 'photo' });
-    })];
+    state.palettes = [first, ...harmonyBatch(plan, (i) => bases[i % bases.length], 'photo', [pure])];
   } else if (state.mode === 'mood') {
     const text = state.mood.text.trim();
     if (!text) { state.palettes = []; state.mood.info = null; return; }
@@ -113,9 +120,13 @@ function generateFresh({ stable = false } = {}) {
     });
   } else if (state.mode === 'theme') {
     const n = state.total || 9;
-    state.palettes = Array.from({ length: n }, (_, i) => makePalette(
-      `theme:${state.themeId}`, generateThemeColors(state.themeId, state.count, seedFor(i) + 13, i % 3), taken, { source: 'theme' },
-    ));
+    const seen = [];
+    state.palettes = Array.from({ length: n }, (_, i) => {
+      const make = (k) => generateThemeColors(state.themeId, state.count, seedFor(i) + 13 + k * 104729, (i + k) % 3);
+      const hexes = live ? make(0) : pickDistinct(make, seen);
+      seen.push(hexes);
+      return makePalette(`theme:${state.themeId}`, hexes, taken, { source: 'theme' });
+    });
   } else {
     state.palettes = [];
   }
@@ -134,7 +145,7 @@ function builderHtml() {
   const saved = hasPalette(book, d.id);
   const actions = [
     `<button type="button" class="btn btn-primary btn-sm" data-action="build-save" data-pid="${d.id}" ${d.colors.length ? '' : 'disabled'}>${ICONS.star}<span>${saved ? 'Saved ✓' : 'Save to book'}</span></button>`,
-    'add', 'copyall', 'export', 'more',
+    'art', 'add', 'copyall', 'export', 'more',
     `<button type="button" class="icon-btn" data-action="build-new" aria-label="Start a new palette" title="Start a new palette">${ICONS.sparkle}</button>`,
   ];
   if (!d.colors.length) {
@@ -345,12 +356,17 @@ function shufflePalette(id) {
   const old = state.palettes[i];
   const taken = new Set(state.palettes.map((p) => p.name));
   let hexes;
-  if (old.harmony.startsWith('theme:')) hexes = generateThemeColors(state.themeId, state.count, randSeed(), i % 3);
-  else if (old.harmony === 'photo-pure') hexes = extractPhotoColors(state.photo.pixels, state.count, randSeed());
-  else if (old.harmony === 'mood') {
-    const res = moodPalettes(old.moodText, { count: state.count, variants: 9, seed: randSeed() });
-    hexes = (res.palettes.find((m) => m.variant === old.variant) ?? res.palettes[0]).hexes;
-  } else hexes = generateColors(old.base, old.harmony, state.count, randSeed());
+  const before = [old.colors.map((c) => c.hex)]; // the new palette must not be a copy of this one
+  if (old.harmony.startsWith('theme:')) {
+    hexes = pickDistinct((k) => generateThemeColors(state.themeId, state.count, randSeed(), (i + k) % 3), before);
+  } else if (old.harmony === 'photo-pure') {
+    hexes = pickDistinct(() => extractPhotoColors(state.photo.pixels, state.count, randSeed()), before, { limit: 0.75 });
+  } else if (old.harmony === 'mood') {
+    hexes = pickDistinct(() => {
+      const res = moodPalettes(old.moodText, { count: state.count, variants: 9, seed: randSeed() });
+      return (res.palettes.find((m) => m.variant === old.variant) ?? res.palettes[0]).hexes;
+    }, before);
+  } else hexes = generateDistinct(old.base, old.harmony, state.count, randSeed(), {}, before);
   const fresh = makePalette(old.harmony, hexes, taken, { base: old.base, source: old.source, moodText: old.moodText, variant: old.variant });
   if (old.harmony === 'mood') fresh.name = old.name;
   if (hasLocks(old)) fresh.colors = mergeLocked(old.colors, hexes, state.count);
@@ -627,7 +643,7 @@ const wheel = new ColorWheel($('#wheel'), $('#wheel-handle'), $('#brightness'), 
   rafPending = true;
   requestAnimationFrame(() => {
     rafPending = false;
-    regenerate({ stable: true, animate: false });
+    regenerate({ stable: true, animate: false, live: true });
   });
 });
 
@@ -649,6 +665,7 @@ function handlePaletteAction(e) {
     case 'more': moreMenu(btn, p); break;
     case 'swap': openColorPop(btn, p, Number(btn.dataset.index), 'swap'); break;
     case 'copyall': copyAllMenu(btn, p); break;
+    case 'art': import('./contextui.js').then((m) => m.openContext(p)); break;
     case 'export': openExportSheet(p, state.shape); break;
     case 'rename': startRename(btn); break;
     case 'build-save': saveDraft(btn); break;
@@ -724,10 +741,11 @@ function init() {
   $('#count').addEventListener('input', (e) => {
     state.count = Number(e.target.value);
     $('#count-out').textContent = state.count;
-    regenerate({ stable: true, animate: false });
+    regenerate({ stable: true, animate: false, live: true });
     if (state.mode === 'photo') renderPhoto();
     savePrefs();
   });
+  $('#count').addEventListener('change', () => regenerate({ stable: true, animate: false }));
 
   $('#harmony-filter').addEventListener('click', (e) => {
     const b = e.target.closest('[data-harmony]');
@@ -756,9 +774,10 @@ function init() {
   $('#total').addEventListener('input', (e) => {
     state.total = Number(e.target.value);
     renderTotal();
-    regenerate({ stable: true, animate: false });
+    regenerate({ stable: true, animate: false, live: true });
     savePrefs();
   });
+  $('#total').addEventListener('change', () => regenerate({ stable: true, animate: false }));
 
   $('#shape-picker').addEventListener('click', (e) => {
     const b = e.target.closest('[data-shape]');

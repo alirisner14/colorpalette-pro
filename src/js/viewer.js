@@ -113,6 +113,7 @@ export function initViewer() {
     const b = e.target.closest('[data-format]');
     if (b) runExport(p, b.dataset.format, 'chip');
   });
+  $('#v-art').addEventListener('click', async () => (await import('./contextui.js')).openContext(book.palettes[currentId]));
   $('#v-copy').addEventListener('click', (e) => copyAllMenu(e.currentTarget, book.palettes[currentId]));
   $('#v-more').addEventListener('click', (e) => cardMenu(e.currentTarget, currentId, { inViewer: true }));
   // Moving or renaming a palette from the menu changes what the header shows.
