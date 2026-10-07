@@ -18,6 +18,7 @@
 - [x] **Share link / QR code:** palette data encoded in the link, so there's no server
 
 ## Next: high value, low effort
+- [ ] **Rename individual colors** (planned for the next round). Tap a color's name to type your own, the same way palette names already work. Your names show up in exports, prints, backups and shared links, and a shuffle keeps the names of locked colors. Also check that palette renaming is easy to find everywhere a palette appears (swatch book, deck, full-screen viewer), not just on the Create page.
 - [ ] Drag to reorder colors inside a palette
 - [ ] Search in the swatch book
 - [ ] More example artwork pieces (an outfit, a logo, packaging)
