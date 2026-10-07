@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   HARMONIES, STYLES, RECIPES, recipeFor, paletteLikeness, MIN_COLORS, MAX_COLORS, generateColors, generateDistinct, generateBatch, harmonyPlan, variantFor, paletteSimilarity, pickDistinct,
 } from '../src/js/harmonies.js';
-import { normalizeHex, colorDistance } from '../src/js/color.js';
+import { normalizeHex, colorDistance, hexToOklch, oklchToHex, deltaE } from '../src/js/color.js';
 import { namePalette } from '../src/js/names.js';
 
 const COLORFUL = ['#33ADE8', '#E8498F', '#2BB673', '#FFC75F', '#7C5CFF', '#FF0000'];
@@ -162,4 +162,41 @@ test('similarity: copies are 1, strangers are 0, and the try-again helper falls 
   const picked = pickDistinct((k) => { calls++; return k < 2 ? same : ['#0000FF', '#FFFF00']; }, [same]);
   assert.deepEqual(picked, ['#0000FF', '#FFFF00']);
   assert.equal(calls, 3);
+});
+
+test('OKLCH: converts both ways exactly, and colors a screen cannot show keep their hue and lightness', () => {
+  for (const hex of ['#FF0000', '#33ADE8', '#FFFFFF', '#000000', '#7FD1B9', '#FFFF00', '#17213D']) {
+    assert.equal(oklchToHex(hexToOklch(hex)), hex);
+  }
+  const wild = hexToOklch(oklchToHex({ l: 0.7, c: 0.4, h: 140 })); // far too vivid for a screen
+  assert.ok(Math.abs(wild.l - 0.7) < 0.01 && Math.abs(wild.h - 140) < 3, JSON.stringify(wild));
+  assert.ok(deltaE('#FF0000', '#FE0000') < 0.01 && deltaE('#FF0000', '#0000FF') > 0.3);
+});
+
+test('random palettes spread their hues with the golden ratio: no clumps, and a new spread every time', () => {
+  const gaps = [];
+  const firsts = new Set();
+  for (let seed = 1; seed <= 60; seed++) {
+    const colors = generateColors('#33ADE8', 'random', 6, seed);
+    const hues = colors.map(hexToOklch).filter((c) => c.c > 0.04).map((c) => c.h).sort((a, b) => a - b);
+    let min = 360;
+    hues.forEach((h, i) => { min = Math.min(min, i ? h - hues[i - 1] : h + 360 - hues[hues.length - 1]); });
+    gaps.push(min);
+    firsts.add(Math.round(hexToOklch(colors[1]).h / 30));
+  }
+  const avg = gaps.reduce((t, g) => t + g, 0) / gaps.length;
+  assert.ok(avg > 18, `hues clump: the closest two are only ${avg.toFixed(1)} degrees apart on average`);
+  assert.ok(firsts.size >= 8, 'the spread starts somewhere different each time');
+});
+
+test('partner hues keep the perceived lightness of your color (OKLCH), give or take a little', () => {
+  for (const base of ['#33ADE8', '#E8498F', '#2BB673']) {
+    const own = hexToOklch(base).l;
+    for (let seed = 1; seed <= 20; seed++) {
+      // the mosaic and tiers recipes reach far; the classic ladder keeps each hue's middle tone near yours
+      const colors = generateColors(base, 'complementary', 6, seed, { variant: 0, recipe: 'ladder' });
+      const partner = colors.slice(1).map(hexToOklch).filter((c) => Math.abs(((c.h - hexToOklch(base).h + 540) % 360) - 180) < 40);
+      assert.ok(partner.some((c) => Math.abs(c.l - own) < 0.12), `${base} seed ${seed}`);
+    }
+  }
 });

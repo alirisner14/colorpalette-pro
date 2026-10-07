@@ -8,6 +8,14 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 Nothing yet.
 
+## [1.0.5] — 2026-10-07
+
+### Changed
+- **Palettes are built in OKLCH**, a color space that matches how eyes see color, instead of HSL. Lightness steps look even for every hue, and partner hues keep the perceived lightness and intensity of your color, so harmonies are balanced instead of muddy or lopsided. Colors a screen can't show keep their hue and lightness and just lose a little intensity.
+- **Random palettes** spread their hues a golden-ratio step apart from a random starting point, so they never clump (no three blues and two reds) and each one lands on different hues.
+- **Surprise me** steps a golden-ratio distance around the wheel from your current color, so two presses in a row never give similar colors.
+- Small bell-curve variations in lightness and intensity keep tones and partner colors from feeling mechanical.
+
 ## [1.0.4] — 2026-10-07
 
 ### Changed

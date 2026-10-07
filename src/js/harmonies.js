@@ -2,6 +2,7 @@
 import { getTheme } from './themes.js';
 import {
   clamp, wrapHue, hexToHsl, hslToHex, normalizeHex, colorDistance, makeRng, hashString,
+  hexToOklch, oklchToHex, GOLDEN_ANGLE,
 } from './color.js';
 
 export const MIN_COLORS = 6;
@@ -105,10 +106,22 @@ export function variantFor(harmonyId, round, shift = 0) {
  */
 export const recipeFor = (i, offset = 0) => RECIPES[(i + offset) % RECIPES.length];
 
-const satOf = (s, style) => clamp(s * style.sat, style.floor, 1);
-/** The lightest and darkest a palette of this look reaches. */
-const lightRange = (style) => [clamp(0.5 + style.lift - 0.33 * style.spread, 0.1, 0.5), clamp(0.52 + style.lift + 0.36 * style.spread, 0.6, 0.94)];
+/* All palettes are built in OKLCH (see color.js): lightness steps look even for every hue, and a
+   partner hue keeps the perceived lightness and intensity of your color, so harmonies balance. */
+
+/** Bell-shaped noise in [-1, 1]: mostly small nudges, rarely big ones. */
+const gauss = (rng) => (rng() + rng() + rng() - 1.5) / 1.5;
+/** A look's chroma for a color: scaled by the look, never below its floor. */
+const chromaOf = (c, style) => clamp(Math.max(c * style.sat, style.floor * 0.16), 0, 0.32);
+/** The lightest and darkest a palette of this look reaches (OKLCH lightness). */
+const lightRange = (style) => [
+  clamp(0.6 + style.lift * 0.8 - 0.27 * style.spread, 0.22, 0.6),
+  clamp(0.64 + style.lift * 0.8 + 0.28 * style.spread, 0.74, 0.97),
+];
 const spreadOver = (n, lo, hi) => Array.from({ length: n }, (_, i) => (n === 1 ? (lo + hi) / 2 : hi - ((hi - lo) * i) / (n - 1)));
+const ok = (l, c, h) => oklchToHex({ l: clamp(l, 0.02, 0.985), c: Math.max(0, c), h: wrapHue(h) });
+const okL = (hex) => hexToOklch(hex).l;
+const byLightness = (a, b) => okL(b) - okL(a);
 function shuffleInPlace(list, rng) {
   for (let i = list.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
@@ -117,27 +130,28 @@ function shuffleInPlace(list, rng) {
   return list;
 }
 
-/** ladder: each hue fans out lighter and darker, softening saturation as it lightens. */
-function toneLadder({ h, s, l }, n, rng, taken, { style, drift }) {
+/** ladder: each hue fans out lighter and darker; tints lose chroma as they lighten. */
+function toneLadder(a, n, rng, taken, { style, drift }) {
   const out = [];
-  const steps = [0, 0.14, -0.14, 0.27, -0.26, 0.37, -0.36, 0.08, -0.08, 0.21, -0.2, 0.32, -0.31, 0.42, -0.4];
-  const baseSat = satOf(s, style);
-  const centre = clamp(l + style.lift, 0.2, 0.8);
+  const steps = [0, 0.11, -0.11, 0.21, -0.2, 0.29, -0.28, 0.06, -0.06, 0.16, -0.15, 0.25, -0.24, 0.33, -0.31];
+  const c0 = chromaOf(a.c, style);
+  const centre = clamp(a.l + style.lift * 0.8, 0.3, 0.86);
   for (const step of steps) {
     if (out.length >= n) break;
     const st = step * style.spread;
-    const nl = clamp(centre + st + (rng() - 0.5) * 0.03, 0.1, 0.95);
-    const satShift = st > 0 ? -st * 0.45 : -st * 0.15;
-    const ns = clamp(baseSat + satShift + (rng() - 0.5) * 0.06, style.floor * 0.5, 1);
-    const nh = wrapHue(h + drift * st + (rng() - 0.5) * 6); // lighter tones lean one way, darker the other
-    const hex = hslToHex({ h: nh, s: ns, l: nl });
+    const fade = 1 - Math.max(0, st) * 1.4 - Math.max(0, -st) * 0.4;
+    const hex = ok(
+      centre + st + gauss(rng) * 0.015,
+      Math.max(c0 * fade * (1 + gauss(rng) * 0.08), style.floor * 0.08),
+      a.h + drift * st + gauss(rng) * 4, // lighter tones lean one way, darker the other
+    );
     if (isDistinct(hex, [...taken, ...out])) out.push(hex);
   }
   return out;
 }
 
 function ladder(anchors, n, rng, style) {
-  const look = { style, drift: (rng() - 0.5) * 56 * style.hue };
+  const look = { style, drift: (rng() - 0.5) * 70 * style.hue };
   const sizes = distribute(n, anchors.length);
   if (sizes.length > 1 && rng() < 0.6) {
     // Sometimes one hue takes the lead.
@@ -154,20 +168,16 @@ function ladder(anchors, n, rng, style) {
 function blend(anchors, n, rng, style) {
   const [base] = anchors;
   const dir = rng() < 0.5 ? 1 : -1;
-  let offs = anchors.map((a) => wrapHue((a.h - base.h) * dir)).sort((a, b) => a - b);
+  const offs = anchors.map((a) => wrapHue((a.h - base.h) * dir)).sort((a, b) => a - b);
   let reach = offs[offs.length - 1];
   if (reach < 30) reach = 30 + rng() * 40 * style.hue; // one hue (monochrome): drift to a neighbour instead
   const [lo, hi] = lightRange(style);
   const shape = Math.floor(rng() * 3); // light to dark, dark to light, or deep in the middle
-  const s0 = satOf(anchors.reduce((t, a) => t + a.s, 0) / anchors.length, style);
+  const c0 = chromaOf(anchors.reduce((t, a) => t + a.c, 0) / anchors.length, style);
   return Array.from({ length: n }, (_, i) => {
     const t = n === 1 ? 0 : i / (n - 1);
     const k = shape === 0 ? t : shape === 1 ? 1 - t : 1 - Math.abs(t * 2 - 1);
-    return hslToHex({
-      h: wrapHue(base.h + dir * reach * t),
-      s: clamp(s0 * (0.82 + 0.3 * Math.sin(t * Math.PI)) + (rng() - 0.5) * 0.06, style.floor * 0.5, 1),
-      l: clamp(hi - (hi - lo) * k + (rng() - 0.5) * 0.04, 0.08, 0.95),
-    });
+    return ok(hi - (hi - lo) * k + gauss(rng) * 0.02, c0 * (0.8 + 0.35 * Math.sin(t * Math.PI)) * (1 + gauss(rng) * 0.08), base.h + dir * reach * t);
   });
 }
 
@@ -178,11 +188,7 @@ function mosaic(anchors, n, rng, style) {
   const start = Math.floor(rng() * anchors.length);
   const out = Array.from({ length: n }, (_, i) => {
     const a = anchors[(start + i) % anchors.length];
-    return hslToHex({
-      h: wrapHue(a.h + (rng() - 0.5) * 22 * style.hue),
-      s: clamp(satOf(a.s, style) * (0.65 + rng() * 0.5), style.floor * 0.5, 1),
-      l: levels[i],
-    });
+    return ok(levels[i] + gauss(rng) * 0.015, chromaOf(a.c, style) * (0.65 + rng() * 0.5), a.h + gauss(rng) * 12 * style.hue);
   });
   return style.order === 'light' ? out.sort(byLightness) : out;
 }
@@ -191,20 +197,21 @@ function mosaic(anchors, n, rng, style) {
 function accent(anchors, n, rng, style) {
   const [base] = anchors;
   const accents = Math.max(2, Math.min(anchors.length + 1, Math.round(n * 0.38)));
-  const lean = rng() < 0.5 ? 40 : 220; // creams and tans, or cool grays
-  const tintHue = wrapHue(base.h + (wrapHue(lean - base.h + 180) - 180) * (0.25 + rng() * 0.5));
-  const neutrals = spreadOver(n - accents, 0.12 + Math.max(0, -style.lift) * 0.3, 0.95).map((l) => hslToHex({
-    h: wrapHue(tintHue + (rng() - 0.5) * 16),
-    s: clamp(0.05 + rng() * 0.16 + (l > 0.85 ? 0.15 : 0), 0, 0.4),
-    l: clamp(l + (rng() - 0.5) * 0.03, 0.06, 0.96),
-  }));
+  const lean = rng() < 0.5 ? 70 : 250; // creams and tans, or cool grays
+  const tintHue = base.h + (wrapHue(lean - base.h + 180) - 180) * (0.25 + rng() * 0.5);
+  const neutrals = spreadOver(n - accents, 0.24 + Math.max(0, -style.lift) * 0.3, 0.97).map((l) => ok(
+    l + gauss(rng) * 0.015,
+    0.008 + rng() * 0.03 + (l > 0.9 ? 0.012 : 0),
+    tintHue + gauss(rng) * 10,
+  ));
   const pops = Array.from({ length: accents }, (_, i) => {
     const a = anchors[i % anchors.length];
-    return hslToHex({
-      h: wrapHue(a.h + (i >= anchors.length ? 14 : 0)),
-      s: clamp(Math.max(satOf(a.s, style), 0.55), 0, 1),
-      l: clamp(0.5 + style.lift * 0.6 + (i >= anchors.length ? -0.16 : (rng() - 0.5) * 0.12), 0.25, 0.75),
-    });
+    const extra = i >= anchors.length;
+    return ok(
+      clamp(0.66 + style.lift * 0.5 + (extra ? -0.15 : gauss(rng) * 0.05), 0.42, 0.86),
+      Math.max(chromaOf(a.c, style), 0.13),
+      a.h + (extra ? 14 : 0),
+    );
   });
   return [...neutrals, ...pops];
 }
@@ -215,32 +222,35 @@ function tiers(anchors, n, rng, style) {
   const row = (count, light) => Array.from({ length: count }, (_, i) => {
     const a = anchors[i % anchors.length];
     const lap = Math.floor(i / anchors.length);
-    return hslToHex({
-      h: wrapHue(a.h + lap * 18 * (light ? 1 : -1) + (rng() - 0.5) * 8 * style.hue),
-      s: light ? clamp(satOf(a.s, style) * 0.55 + 0.15, 0.2, 0.75) : clamp(satOf(a.s, style) * 1.05, style.floor, 1),
-      l: light ? clamp(0.86 - lap * 0.06 + style.lift * 0.3 + (rng() - 0.5) * 0.04, 0.7, 0.95) : clamp(0.36 + lap * 0.1 + style.lift * 0.5 + (rng() - 0.5) * 0.05, 0.14, 0.55),
-    });
+    const h = a.h + lap * 18 * (light ? 1 : -1) + gauss(rng) * 5 * style.hue;
+    return light
+      ? ok(clamp(0.93 - lap * 0.04 + style.lift * 0.2 + gauss(rng) * 0.015, 0.82, 0.97), clamp(chromaOf(a.c, style) * 0.35, 0.03, 0.09), h)
+      : ok(clamp(0.47 + lap * 0.08 + style.lift * 0.4 + gauss(rng) * 0.03, 0.28, 0.66), Math.max(chromaOf(a.c, style) * 1.05, 0.1), h);
   });
   return [...row(pale, true), ...row(n - pale, false)];
 }
 
 const RECIPE_FNS = { ladder, blend, mosaic, accent, tiers };
 
+/**
+ * random: hues a golden-ratio step apart from a random starting point, so they spread around the
+ * wheel without clumping (no three blues and two reds) yet every palette lands on different hues.
+ */
 function randomColors(base, n, rng, style) {
+  const b = hexToOklch(base);
+  const [lo, hi] = lightRange(style);
+  const phase = rng() * 360;
   const out = [base];
-  let guard = 0;
-  while (out.length < n && guard++ < 500) {
-    const hex = hslToHex({
-      h: rng() * 360,
-      s: clamp((0.3 + rng() * 0.62) * style.sat, Math.max(0.1, style.floor * 0.6), 1),
-      l: clamp(0.22 + rng() * 0.64 + style.lift * 0.8, 0.12, 0.92),
-    });
+  for (let k = 0; out.length < n && k < 400; k++) {
+    const hex = ok(
+      lo + (hi - lo) * rng() + gauss(rng) * 0.03,
+      clamp((0.05 + rng() * 0.15) * style.sat, style.floor * 0.08, 0.3),
+      b.h + phase + k * GOLDEN_ANGLE + gauss(rng) * 6,
+    );
     if (isDistinct(hex, out)) out.push(hex);
   }
   return out;
 }
-
-const byLightness = (a, b) => hexToHsl(b).l - hexToHsl(a).l;
 
 /**
  * Make sure a recipe's colors hold your exact color and `n` clearly different colors: your color
@@ -252,14 +262,9 @@ function finish(list, base, n, anchors, rng) {
   const withBase = list.map((c, i) => (i === at ? base : c));
   const out = [];
   withBase.forEach((c) => { if (c === base || isDistinct(c, out.filter((x) => x !== base).concat(base))) out.push(c); });
-  let guard = 0;
-  while (out.length < n && guard++ < 400) {
-    const a = anchors[guard % anchors.length];
-    const hex = hslToHex({
-      h: wrapHue(a.h + (rng() - 0.5) * 30),
-      s: clamp(0.15 + rng() * 0.8),
-      l: clamp(0.12 + rng() * 0.82),
-    });
+  for (let k = 0; out.length < n && k < 400; k++) {
+    const a = anchors[k % anchors.length];
+    const hex = ok(0.25 + rng() * 0.72, 0.02 + rng() * 0.18, a.h + gauss(rng) * 20);
     if (isDistinct(hex, out)) out.push(hex);
   }
   return out.slice(0, n);
@@ -287,15 +292,16 @@ export function generateColors(baseHex, harmonyId, count, seed, { variant, recip
   if (!harmony.offsets) return randomColors(base, n, rng, style);
 
   const wander = (3 + rng() * 14) * style.hue; // degrees a partner hue may stray from its textbook spot
-  const hsl = hexToHsl(base);
+  const own = hexToOklch(base);
   // Grays have no meaningful hue, so give partner hues some color to work with.
-  const partnerSat = hsl.s < 0.12 ? 0.5 : hsl.s;
+  const partnerC = own.c < 0.03 ? 0.11 : own.c;
+  // Partners keep your color's perceived lightness and intensity, give or take a little.
   const anchors = harmony.offsets.map((offset, i) => (i === 0
-    ? hsl
+    ? own
     : {
-      h: wrapHue(hsl.h + offset + (rng() - 0.5) * 2 * wander),
-      s: clamp(partnerSat * (0.9 + rng() * 0.2)),
-      l: clamp(hsl.l + (rng() - 0.5) * 0.2, 0.2, 0.85),
+      h: wrapHue(own.h + offset + (rng() - 0.5) * 2 * wander),
+      c: partnerC * (1 + gauss(rng) * 0.1),
+      l: clamp(own.l + gauss(rng) * 0.06, 0.3, 0.9),
     }));
   const colors = finish(RECIPE_FNS[how](anchors, n, rng, style), base, n, anchors, rng);
   return style.order === 'light' && how !== 'tiers' && how !== 'accent' ? colors.sort(byLightness) : colors;
@@ -349,7 +355,8 @@ export function pickDistinct(make, others = [], { limit = 0.5, tries = 6, measur
 }
 
 /** How strict a harmony palette must be about looking different from the others. */
-const LOOKS_NEW = { limit: 0.55, tries: 12, measure: paletteLikeness };
+// Judged by eye (paletteLikeness), and a palette that keeps half its colors never counts as new.
+const LOOKS_NEW = { limit: 0.55, tries: 12, measure: (a, b) => Math.max(paletteLikeness(a, b), paletteSimilarity(a, b) * 1.1) };
 
 /** generateColors that keeps trying new seeds until the result is different from `others`. */
 export function generateDistinct(baseHex, harmonyId, count, seed, opts = {}, others = [], limits = LOOKS_NEW) {

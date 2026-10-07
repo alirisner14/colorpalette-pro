@@ -1,4 +1,4 @@
-import { normalizeHex, readableText, hslToHex, hexToHsl, rgbString, rgbToHex, parseColorCodes } from './color.js';
+import { normalizeHex, readableText, hslToHex, hexToHsl, rgbString, rgbToHex, parseColorCodes, wrapHue, hexToOklch, oklchToHex, GOLDEN_ANGLE } from './color.js';
 import {
   HARMONIES, MIN_COLORS, MAX_COLORS, STYLES, RECIPES, generateBatch, generateDistinct, pickDistinct, paletteLikeness, swapOptions, harmonyPlan, PER_TYPE_DEFAULT,
 } from './harmonies.js';
@@ -799,7 +799,9 @@ function init() {
     if (!reducedMotion()) icon.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(360deg)' }], { duration: 500, easing: 'ease-out' });
   });
   $('#surprise').addEventListener('click', () => {
-    setBase(hslToHex({ h: Math.random() * 360, s: 0.45 + Math.random() * 0.5, l: 0.4 + Math.random() * 0.35 }));
+    // A golden-ratio step from the current color: every press lands far from the last few, never next to them.
+    const h = wrapHue(hexToOklch(state.base).h + GOLDEN_ANGLE + (Math.random() - 0.5) * 30);
+    setBase(oklchToHex({ h, l: 0.55 + Math.random() * 0.3, c: 0.09 + Math.random() * 0.1 }));
   });
   $('#eyedropper').addEventListener('click', pickFromScreen);
   $('#image-input').addEventListener('change', (e) => { pickFromImage(e.target.files[0]); e.target.value = ''; });

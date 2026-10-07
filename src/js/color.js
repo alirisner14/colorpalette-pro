@@ -106,6 +106,71 @@ export function colorDistance(a, b) {
   return Math.sqrt((2 + rm / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rm) / 256) * db * db);
 }
 
+/* ---------- OKLab / OKLCH (Björn Ottosson, 2020) ----------
+   A perceptually even color space: the same step in lightness looks like the same step for
+   every hue, and turning the hue keeps a color's perceived lightness and intensity. l is [0, 1],
+   c (chroma) is about [0, 0.37] for screen colors, h is degrees. */
+
+const toLinear = (v) => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+const fromLinear = (c) => 255 * (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055);
+
+export function hexToOklch(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  const [R, G, B] = [toLinear(r), toLinear(g), toLinear(b)];
+  const l = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B);
+  const m = Math.cbrt(0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B);
+  const s = Math.cbrt(0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B);
+  const L = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s;
+  const A = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s;
+  const Bb = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s;
+  return { l: L, c: Math.hypot(A, Bb), h: wrapHue((Math.atan2(Bb, A) * 180) / Math.PI) };
+}
+
+function oklchToLinear({ l, c, h }) {
+  const a = c * Math.cos((h * Math.PI) / 180);
+  const b = c * Math.sin((h * Math.PI) / 180);
+  const L = (l + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+  const M = (l - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+  const S = (l - 0.0894841775 * a - 1.2914855480 * b) ** 3;
+  return [
+    4.0767416621 * L - 3.3077115913 * M + 0.2309699292 * S,
+    -1.2684380046 * L + 2.6097574011 * M - 0.3413193965 * S,
+    -0.0041960863 * L - 0.7034186147 * M + 1.7076147010 * S,
+  ];
+}
+
+const inGamut = (rgb) => rgb.every((v) => v >= -1e-4 && v <= 1 + 1e-4);
+
+/**
+ * An OKLCH color as hex. Colors a screen cannot show keep their lightness and hue and lose just
+ * enough chroma to fit, so they never shift to a different-looking color.
+ */
+export function oklchToHex({ l, c, h }) {
+  const L = clamp(l, 0, 1);
+  let lo = 0, hi = Math.max(0, c);
+  let rgb = oklchToLinear({ l: L, c: hi, h });
+  if (!inGamut(rgb)) {
+    for (let i = 0; i < 18; i++) {
+      const mid = (lo + hi) / 2;
+      if (inGamut(oklchToLinear({ l: L, c: mid, h }))) lo = mid; else hi = mid;
+    }
+    rgb = oklchToLinear({ l: L, c: lo, h });
+  }
+  const [r, g, b] = rgb.map(fromLinear);
+  return rgbToHex({ r, g, b });
+}
+
+/** Perceived difference between two colors (OKLab distance; about 0.02 is just noticeable). */
+export function deltaE(a, b) {
+  const p = hexToOklch(a), q = hexToOklch(b);
+  const pa = p.c * Math.cos((p.h * Math.PI) / 180), pb = p.c * Math.sin((p.h * Math.PI) / 180);
+  const qa = q.c * Math.cos((q.h * Math.PI) / 180), qb = q.c * Math.sin((q.h * Math.PI) / 180);
+  return Math.hypot(p.l - q.l, pa - qa, pb - qb);
+}
+
+/** Golden-ratio step in degrees: hues taken this far apart never clump, however many there are. */
+export const GOLDEN_ANGLE = 0.6180339887 * 360;
+
 /** Deterministic 32-bit string hash (FNV-1a). */
 export function hashString(str) {
   let h = 0x811c9dc5;
