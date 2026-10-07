@@ -37,8 +37,8 @@ test('hearts, stars, clouds and messy swatches use the supplied outlines; Abstra
   assert.equal(getShape('heart').path(0), HEART);
   assert.equal(getShape('star').path(3), STAR);
   assert.equal(getShape('cloud').path(1), CLOUD);
-  assert.equal(getShape('messy').path(0), SCRIBBLE_WIDE);
-  assert.equal(getShape('messy').path(1), SCRIBBLE_TALL);
+  assert.equal(getShape('messy').path(0), SCRIBBLE_TALL);
+  assert.equal(getShape('messy-sm').path(0), SCRIBBLE_WIDE);
   // the cloud no longer looks like a flower
   assert.notEqual(getShape('cloud').path(0), getShape('flower').path(0));
   // Abstract is the original generated blob, a little different for every chip
@@ -62,14 +62,17 @@ test('mirroring flips a path left to right, and flipping twice gives the origina
   }
 });
 
-test('the two scribbles take turns and then face the other way; the plain shapes never change', () => {
-  const messy = getShape('messy');
-  assert.equal(messy.path(0), SCRIBBLE_WIDE);
-  assert.equal(messy.path(1), SCRIBBLE_TALL);
-  assert.equal(messy.path(2), mirrorX(SCRIBBLE_WIDE));
-  assert.equal(messy.path(3), mirrorX(SCRIBBLE_TALL));
-  assert.equal(messy.path(4), messy.path(0));
-  assert.equal(messy.path(5), messy.path(1));
+test('Messy Swatches Lg and Sm are two choices; each faces the other way on every second chip, the plain shapes never change', () => {
+  const lg = getShape('messy');
+  const sm = getShape('messy-sm');
+  assert.equal(lg.label, 'Messy Swatches Lg');
+  assert.equal(sm.label, 'Messy Swatches Sm');
+  assert.equal(lg.path(0), SCRIBBLE_TALL);
+  assert.equal(lg.path(1), mirrorX(SCRIBBLE_TALL));
+  assert.equal(lg.path(2), lg.path(0));
+  assert.equal(sm.path(0), SCRIBBLE_WIDE);
+  assert.equal(sm.path(1), mirrorX(SCRIBBLE_WIDE));
+  assert.equal(sm.path(2), sm.path(0));
   for (const id of ['heart', 'star', 'cloud', 'circle', 'flower', 'drop', 'hexagon']) {
     assert.equal(getShape(id).path(0), getShape(id).path(5), id);
   }
@@ -90,7 +93,7 @@ test('printing with the supplied shapes stays on the paper and makes a valid PDF
   const { assertInside, makePalette } = await import('./helpers.mjs');
   const palettes = [makePalette('Sky', 1), makePalette('Kite', 2, 10, '#FF6F91')];
   for (const format of ['deck', 'book']) {
-    for (const shapes of [['heart'], ['star'], ['cloud'], ['messy'], ['blob'], ['heart', 'star', 'cloud', 'messy', 'blob']]) {
+    for (const shapes of [['heart'], ['star'], ['cloud'], ['messy'], ['blob'], ['messy-sm'], ['heart', 'star', 'cloud', 'messy', 'messy-sm', 'blob']]) {
       const res = buildPrint({ format, kind: 'palettes', style: 'custom', shapes, perUnit: 2, showHex: true }, palettes);
       assert.ok(res.pages.length > 0, `${format} ${shapes}`);
       res.pages.forEach((pg, i) => assertInside(pg, `${format} ${shapes} page ${i}`));

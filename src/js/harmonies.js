@@ -77,6 +77,17 @@ export const STYLES = [
 ];
 
 /**
+ * How a palette is put together. Each one gives a really different kind of palette from the
+ * same harmony, so a batch is not a row of "two shades of this, three shades of that".
+ *   ladder    each hue in a few tones, lighter and darker
+ *   blend     a smooth walk around the wheel from hue to hue, like a gradient
+ *   mosaic    the hues mixed together, each at its own lightness
+ *   accent    mostly soft neutrals tinted with your color, with a few bright accents
+ *   tiers     a row of pale tints over a row of rich, deep colors
+ */
+export const RECIPES = ['ladder', 'blend', 'mosaic', 'accent', 'tiers'];
+
+/**
  * Which look palette number `round` of a harmony gets in a batch. With no `shift` the first of
  * each harmony is the classic look and the later ones take different looks, so the same
  * start gives the same batch. A `shift` (for "shuffle all") turns the whole set to new looks.
@@ -89,13 +100,28 @@ export function variantFor(harmonyId, round, shift = 0) {
 }
 
 /**
- * Build `n` tones of one hue. The first tone is the anchor itself; the rest
- * fan out lighter and darker, softening saturation as they lighten.
+ * Which recipe palette `i` of a batch uses. Neighbours always differ, and so do two palettes of
+ * the same harmony (with 7 harmonies they are 7 apart, and 7 is not a multiple of 5).
  */
+export const recipeFor = (i, offset = 0) => RECIPES[(i + offset) % RECIPES.length];
+
+const satOf = (s, style) => clamp(s * style.sat, style.floor, 1);
+/** The lightest and darkest a palette of this look reaches. */
+const lightRange = (style) => [clamp(0.5 + style.lift - 0.33 * style.spread, 0.1, 0.5), clamp(0.52 + style.lift + 0.36 * style.spread, 0.6, 0.94)];
+const spreadOver = (n, lo, hi) => Array.from({ length: n }, (_, i) => (n === 1 ? (lo + hi) / 2 : hi - ((hi - lo) * i) / (n - 1)));
+function shuffleInPlace(list, rng) {
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  return list;
+}
+
+/** ladder: each hue fans out lighter and darker, softening saturation as it lightens. */
 function toneLadder({ h, s, l }, n, rng, taken, { style, drift }) {
   const out = [];
   const steps = [0, 0.14, -0.14, 0.27, -0.26, 0.37, -0.36, 0.08, -0.08, 0.21, -0.2, 0.32, -0.31, 0.42, -0.4];
-  const baseSat = clamp(s * style.sat, style.floor, 1);
+  const baseSat = satOf(s, style);
   const centre = clamp(l + style.lift, 0.2, 0.8);
   for (const step of steps) {
     if (out.length >= n) break;
@@ -107,18 +133,98 @@ function toneLadder({ h, s, l }, n, rng, taken, { style, drift }) {
     const hex = hslToHex({ h: nh, s: ns, l: nl });
     if (isDistinct(hex, [...taken, ...out])) out.push(hex);
   }
-  // Fallback: walk saturation if lightness steps collided.
-  let guard = 0;
-  while (out.length < n && guard++ < 200) {
-    const hex = hslToHex({
-      h: wrapHue(h + (rng() - 0.5) * 24),
-      s: clamp(0.15 + rng() * 0.8),
-      l: clamp(0.15 + rng() * 0.78),
-    });
-    if (isDistinct(hex, [...taken, ...out])) out.push(hex);
-  }
   return out;
 }
+
+function ladder(anchors, n, rng, style) {
+  const look = { style, drift: (rng() - 0.5) * 56 * style.hue };
+  const sizes = distribute(n, anchors.length);
+  if (sizes.length > 1 && rng() < 0.6) {
+    // Sometimes one hue takes the lead.
+    const to = Math.floor(rng() * sizes.length);
+    const from = sizes.reduce((best, v, i) => (i !== to && v > (sizes[best] ?? 0) ? i : best), to === 0 ? 1 : 0);
+    if (from !== to && sizes[from] > 2) { sizes[from] -= 1; sizes[to] += 1; }
+  }
+  const out = [];
+  anchors.forEach((a, i) => out.push(...toneLadder(a, sizes[i], rng, out, look).sort(byLightness)));
+  return out;
+}
+
+/** blend: walk around the wheel through every hue of the harmony, light at one end and deep at the other. */
+function blend(anchors, n, rng, style) {
+  const [base] = anchors;
+  const dir = rng() < 0.5 ? 1 : -1;
+  let offs = anchors.map((a) => wrapHue((a.h - base.h) * dir)).sort((a, b) => a - b);
+  let reach = offs[offs.length - 1];
+  if (reach < 30) reach = 30 + rng() * 40 * style.hue; // one hue (monochrome): drift to a neighbour instead
+  const [lo, hi] = lightRange(style);
+  const shape = Math.floor(rng() * 3); // light to dark, dark to light, or deep in the middle
+  const s0 = satOf(anchors.reduce((t, a) => t + a.s, 0) / anchors.length, style);
+  return Array.from({ length: n }, (_, i) => {
+    const t = n === 1 ? 0 : i / (n - 1);
+    const k = shape === 0 ? t : shape === 1 ? 1 - t : 1 - Math.abs(t * 2 - 1);
+    return hslToHex({
+      h: wrapHue(base.h + dir * reach * t),
+      s: clamp(s0 * (0.82 + 0.3 * Math.sin(t * Math.PI)) + (rng() - 0.5) * 0.06, style.floor * 0.5, 1),
+      l: clamp(hi - (hi - lo) * k + (rng() - 0.5) * 0.04, 0.08, 0.95),
+    });
+  });
+}
+
+/** mosaic: the hues mixed together, every color at a different lightness. */
+function mosaic(anchors, n, rng, style) {
+  const [lo, hi] = lightRange(style);
+  const levels = shuffleInPlace(spreadOver(n, lo, hi), rng);
+  const start = Math.floor(rng() * anchors.length);
+  const out = Array.from({ length: n }, (_, i) => {
+    const a = anchors[(start + i) % anchors.length];
+    return hslToHex({
+      h: wrapHue(a.h + (rng() - 0.5) * 22 * style.hue),
+      s: clamp(satOf(a.s, style) * (0.65 + rng() * 0.5), style.floor * 0.5, 1),
+      l: levels[i],
+    });
+  });
+  return style.order === 'light' ? out.sort(byLightness) : out;
+}
+
+/** accent: soft neutrals tinted toward your color (warm or cool), lit up by a few bright accents. */
+function accent(anchors, n, rng, style) {
+  const [base] = anchors;
+  const accents = Math.max(2, Math.min(anchors.length + 1, Math.round(n * 0.38)));
+  const lean = rng() < 0.5 ? 40 : 220; // creams and tans, or cool grays
+  const tintHue = wrapHue(base.h + (wrapHue(lean - base.h + 180) - 180) * (0.25 + rng() * 0.5));
+  const neutrals = spreadOver(n - accents, 0.12 + Math.max(0, -style.lift) * 0.3, 0.95).map((l) => hslToHex({
+    h: wrapHue(tintHue + (rng() - 0.5) * 16),
+    s: clamp(0.05 + rng() * 0.16 + (l > 0.85 ? 0.15 : 0), 0, 0.4),
+    l: clamp(l + (rng() - 0.5) * 0.03, 0.06, 0.96),
+  }));
+  const pops = Array.from({ length: accents }, (_, i) => {
+    const a = anchors[i % anchors.length];
+    return hslToHex({
+      h: wrapHue(a.h + (i >= anchors.length ? 14 : 0)),
+      s: clamp(Math.max(satOf(a.s, style), 0.55), 0, 1),
+      l: clamp(0.5 + style.lift * 0.6 + (i >= anchors.length ? -0.16 : (rng() - 0.5) * 0.12), 0.25, 0.75),
+    });
+  });
+  return [...neutrals, ...pops];
+}
+
+/** tiers: a row of pale tints of every hue above a row of deep, rich versions. */
+function tiers(anchors, n, rng, style) {
+  const pale = Math.ceil(n / 2);
+  const row = (count, light) => Array.from({ length: count }, (_, i) => {
+    const a = anchors[i % anchors.length];
+    const lap = Math.floor(i / anchors.length);
+    return hslToHex({
+      h: wrapHue(a.h + lap * 18 * (light ? 1 : -1) + (rng() - 0.5) * 8 * style.hue),
+      s: light ? clamp(satOf(a.s, style) * 0.55 + 0.15, 0.2, 0.75) : clamp(satOf(a.s, style) * 1.05, style.floor, 1),
+      l: light ? clamp(0.86 - lap * 0.06 + style.lift * 0.3 + (rng() - 0.5) * 0.04, 0.7, 0.95) : clamp(0.36 + lap * 0.1 + style.lift * 0.5 + (rng() - 0.5) * 0.05, 0.14, 0.55),
+    });
+  });
+  return [...row(pale, true), ...row(n - pale, false)];
+}
+
+const RECIPE_FNS = { ladder, blend, mosaic, accent, tiers };
 
 function randomColors(base, n, rng, style) {
   const out = [base];
@@ -137,14 +243,38 @@ function randomColors(base, n, rng, style) {
 const byLightness = (a, b) => hexToHsl(b).l - hexToHsl(a).l;
 
 /**
+ * Make sure a recipe's colors hold your exact color and `n` clearly different colors: your color
+ * replaces the closest one, near-twins are dropped, and any gaps are filled from the harmony's hues.
+ */
+function finish(list, base, n, anchors, rng) {
+  let at = 0;
+  list.forEach((c, i) => { if (colorDistance(c, base) < colorDistance(list[at], base)) at = i; });
+  const withBase = list.map((c, i) => (i === at ? base : c));
+  const out = [];
+  withBase.forEach((c) => { if (c === base || isDistinct(c, out.filter((x) => x !== base).concat(base))) out.push(c); });
+  let guard = 0;
+  while (out.length < n && guard++ < 400) {
+    const a = anchors[guard % anchors.length];
+    const hex = hslToHex({
+      h: wrapHue(a.h + (rng() - 0.5) * 30),
+      s: clamp(0.15 + rng() * 0.8),
+      l: clamp(0.12 + rng() * 0.82),
+    });
+    if (isDistinct(hex, out)) out.push(hex);
+  }
+  return out.slice(0, n);
+}
+
+/**
  * Generate a list of hex colors for a harmony.
  * @param {string} baseHex starting color (always part of the result)
  * @param {string} harmonyId one of HARMONIES ids
  * @param {number} count 6–15
  * @param {number} [seed] optional seed for reproducible results
- * @param {{ variant?: number }} [opts] `variant` picks one of STYLES; otherwise the seed does
+ * @param {{ variant?: number, recipe?: string }} [opts] `variant` picks one of STYLES and `recipe`
+ *   one of RECIPES; otherwise the seed picks them
  */
-export function generateColors(baseHex, harmonyId, count, seed, { variant } = {}) {
+export function generateColors(baseHex, harmonyId, count, seed, { variant, recipe } = {}) {
   const base = normalizeHex(baseHex);
   if (!base) throw new Error(`Invalid color: ${baseHex}`);
   const n = clamp(Math.round(count), MIN_COLORS, MAX_COLORS);
@@ -152,39 +282,23 @@ export function generateColors(baseHex, harmonyId, count, seed, { variant } = {}
   if (!harmony) throw new Error(`Unknown harmony: ${harmonyId}`);
   const rng = makeRng(seed ?? hashString(base + harmonyId + n));
 
-  const pick = rng();
-  const style = STYLES[(variant ?? Math.floor(pick * STYLES.length)) % STYLES.length];
+  const style = STYLES[(variant ?? Math.floor(rng() * STYLES.length)) % STYLES.length];
+  const how = RECIPES.includes(recipe) ? recipe : RECIPES[Math.floor(rng() * RECIPES.length)];
   if (!harmony.offsets) return randomColors(base, n, rng, style);
 
-  const look = { style, drift: (rng() - 0.5) * 56 * style.hue };
   const wander = (3 + rng() * 14) * style.hue; // degrees a partner hue may stray from its textbook spot
   const hsl = hexToHsl(base);
   // Grays have no meaningful hue, so give partner hues some color to work with.
   const partnerSat = hsl.s < 0.12 ? 0.5 : hsl.s;
-
-  const sizes = distribute(n, harmony.offsets.length);
-  if (sizes.length > 1 && rng() < 0.6) {
-    // Sometimes one hue takes the lead.
-    const to = Math.floor(rng() * sizes.length);
-    const from = sizes.reduce((best, v, i) => (i !== to && v > (sizes[best] ?? 0) ? i : best), to === 0 ? 1 : 0);
-    if (from !== to && sizes[from] > 2) { sizes[from] -= 1; sizes[to] += 1; }
-  }
-
-  const result = [];
-  harmony.offsets.forEach((offset, i) => {
-    const anchor = i === 0
-      ? hsl
-      : {
-        h: wrapHue(hsl.h + offset + (rng() - 0.5) * 2 * wander),
-        s: clamp(partnerSat * (0.9 + rng() * 0.2)),
-        l: clamp(hsl.l + (rng() - 0.5) * 0.2, 0.2, 0.85),
-      };
-    const tones = toneLadder(anchor, sizes[i], rng, result, look);
-    if (i === 0) tones[0] = base; // keep the exact chosen color
-    result.push(...tones.sort(byLightness));
-  });
-  const colors = result.slice(0, n);
-  return style.order === 'light' ? colors.sort(byLightness) : colors;
+  const anchors = harmony.offsets.map((offset, i) => (i === 0
+    ? hsl
+    : {
+      h: wrapHue(hsl.h + offset + (rng() - 0.5) * 2 * wander),
+      s: clamp(partnerSat * (0.9 + rng() * 0.2)),
+      l: clamp(hsl.l + (rng() - 0.5) * 0.2, 0.2, 0.85),
+    }));
+  const colors = finish(RECIPE_FNS[how](anchors, n, rng, style), base, n, anchors, rng);
+  return style.order === 'light' && how !== 'tiers' && how !== 'accent' ? colors.sort(byLightness) : colors;
 }
 
 /**
@@ -198,28 +312,51 @@ export function paletteSimilarity(a, b, reach = 30) {
 }
 
 /**
+ * How alike two palettes look to a person: colors only roughly the same still count, and two
+ * palettes with the same overall lightness and color mix count as alike even when no single
+ * color matches.
+ */
+export function paletteLikeness(a, b) {
+  if (!a.length || !b.length) return 0;
+  const near = paletteSimilarity(a, b, 62);
+  const profile = (list) => {
+    const hsl = list.map(hexToHsl);
+    const L = hsl.map((c) => c.l).sort((x, y) => x - y);
+    const avgS = hsl.reduce((t, c) => t + c.s, 0) / hsl.length;
+    return { lo: L[0], hi: L[L.length - 1], mid: L[Math.floor(L.length / 2)], avgS };
+  };
+  const p = profile(a), q = profile(b);
+  const gap = Math.abs(p.lo - q.lo) + Math.abs(p.hi - q.hi) + Math.abs(p.mid - q.mid) + Math.abs(p.avgS - q.avgS);
+  const shape = clamp(1 - gap / 0.45);
+  return near * 0.75 + shape * 0.25;
+}
+
+/**
  * Call `make(k)` (k = 0, 1, 2…) until it returns a palette that does not look too much like any
  * of `others` (lists of hex colors). Falls back to the least similar one. Used so shuffles really
  * change and a batch never holds near-copies.
  */
-export function pickDistinct(make, others = [], { limit = 0.5, tries = 6 } = {}) {
+export function pickDistinct(make, others = [], { limit = 0.5, tries = 6, measure = paletteSimilarity } = {}) {
   let best = null;
   let bestScore = Infinity;
   for (let k = 0; k < tries; k++) {
     const hexes = make(k);
-    const score = Math.max(0, ...others.map((o) => paletteSimilarity(hexes, o)));
+    const score = Math.max(0, ...others.map((o) => measure(hexes, o)));
     if (score < limit) return hexes;
     if (score < bestScore) { best = hexes; bestScore = score; }
   }
   return best;
 }
 
+/** How strict a harmony palette must be about looking different from the others. */
+const LOOKS_NEW = { limit: 0.55, tries: 12, measure: paletteLikeness };
+
 /** generateColors that keeps trying new seeds until the result is different from `others`. */
-export function generateDistinct(baseHex, harmonyId, count, seed, opts = {}, others = [], limits) {
+export function generateDistinct(baseHex, harmonyId, count, seed, opts = {}, others = [], limits = LOOKS_NEW) {
   return pickDistinct(
     (k) => (k === 0
       ? generateColors(baseHex, harmonyId, count, seed, opts)
-      : generateColors(baseHex, harmonyId, count, (seed ?? 1) + k * 104729)), // later tries are free to take another look
+      : generateColors(baseHex, harmonyId, count, (seed ?? 1) + k * 104729, { recipe: k < 4 ? opts.recipe : undefined })), // later tries are free to take another look
     others,
     limits,
   );
@@ -227,20 +364,22 @@ export function generateDistinct(baseHex, harmonyId, count, seed, opts = {}, oth
 
 /**
  * Colors for a whole batch of harmony palettes. `plan` lists one harmony per palette (see
- * harmonyPlan). Palettes of the same harmony get different looks, and unless `distinct` is
- * switched off (used while a slider is being dragged, so nothing jumps) none is a near-copy of
- * an earlier one. `seen` may hold hex lists that the batch must also differ from.
+ * harmonyPlan). Palettes get different recipes and looks, and unless `distinct` is switched off
+ * (used while a slider is being dragged, so nothing jumps) none looks like an earlier one.
+ * `seen` may hold hex lists that the batch must also differ from (such as the batch that "shuffle
+ * all" is replacing). `offset` turns the recipes so a shuffle deals them out differently.
  * @returns {{ harmony: string, base: string, hexes: string[] }[]}
  */
-export function generateBatch(plan, baseFor, count, { seedFor, shift = 0, distinct = true, seen = [] } = {}) {
+export function generateBatch(plan, baseFor, count, { seedFor, shift = 0, offset = 0, distinct = true, seen = [] } = {}) {
   const kinds = new Set(plan).size;
+  const others = [...seen];
   return plan.map((harmony, i) => {
     const base = baseFor(i);
-    const opts = { variant: variantFor(harmony, Math.floor(i / kinds), shift) };
+    const opts = { variant: variantFor(harmony, Math.floor(i / kinds), shift), recipe: recipeFor(i, offset) };
     const hexes = distinct
-      ? generateDistinct(base, harmony, count, seedFor(i), opts, seen)
+      ? generateDistinct(base, harmony, count, seedFor(i), opts, others)
       : generateColors(base, harmony, count, seedFor(i), opts);
-    seen.push(hexes);
+    others.push(hexes);
     return { harmony, base, hexes };
   });
 }

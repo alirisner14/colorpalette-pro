@@ -8,6 +8,18 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 Nothing yet.
 
+## [1.0.4] — 2026-10-07
+
+### Changed
+- **Palettes really differ now.** Besides the eight looks, every palette is built one of five ways: tones of each hue, a smooth gradient around the wheel, a mosaic of hues at different lightness, soft neutrals with bright accents, or pale tints over rich deep colors. A batch deals these out so neighbours and two palettes of the same harmony never share one, and the "too alike" check now judges palettes the way a person sees them.
+- **Shuffle all** gives a new set every time: it deals the recipes and looks out afresh and avoids anything that looks like the set it replaces.
+- **Palette names** in a set no longer repeat a first or last word (no more "Clover Lullaby" next to "Clover Tea Party"); there are many more words to choose from, including the palette's second and third colors.
+- **Messy Swatches** is now two choices: **Lg** (the squarer scribble) and **Sm** (the wider one).
+- New **Mandala** (layered petals, beaded ring, scalloped edge) and **Modern arches** (boho rainbow print) artwork.
+
+### Fixed
+- Dialogs, including **Palette in context**, now open where you are on the page instead of at the top. On phones the wide dialogs fill the screen width.
+
 ## [1.0.3] — 2026-10-06
 
 ### Changed

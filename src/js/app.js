@@ -1,6 +1,6 @@
 import { normalizeHex, readableText, hslToHex, hexToHsl, rgbString, rgbToHex, parseColorCodes } from './color.js';
 import {
-  HARMONIES, MIN_COLORS, MAX_COLORS, STYLES, generateBatch, generateDistinct, pickDistinct, swapOptions, harmonyPlan, PER_TYPE_DEFAULT,
+  HARMONIES, MIN_COLORS, MAX_COLORS, STYLES, RECIPES, generateBatch, generateDistinct, pickDistinct, paletteLikeness, swapOptions, harmonyPlan, PER_TYPE_DEFAULT,
 } from './harmonies.js';
 import { nameColor, nameColors, namePalette } from './names.js';
 import { SHAPES, getShape } from './shapes.js';
@@ -73,22 +73,25 @@ function planFor(total) {
 /** Make a fresh set of palettes; locked colors from the previous set carry over. */
 function generate(opts = {}) {
   const prev = state.palettes;
-  generateFresh(opts);
+  // "Shuffle all" must not hand back palettes that look like the ones it replaces.
+  const avoid = opts.stable ? [] : prev.map((p) => p.colors.map((c) => c.hex));
+  generateFresh({ ...opts, avoid });
   if (state.palettes.length && prev.some(hasLocks)) state.palettes = carryLocks(prev, state.palettes);
 }
 
 /**
- * @param {{ stable?: boolean, live?: boolean }} opts `stable` makes the same start give the same batch;
+ * @param {{ stable?: boolean, live?: boolean, avoid?: string[][] }} opts `stable` makes the same start give the same batch;
  *   `live` is for frames while the color wheel is being dragged (no look-for-near-copies pass, so nothing jumps).
  */
-function generateFresh({ stable = false, live = false } = {}) {
+function generateFresh({ stable = false, live = false, avoid = [] } = {}) {
   const taken = new Set();
   const seedFor = (i) => (stable ? 7919 * (i + 1) : randSeed());
   // A stable batch always starts with the classic look; "shuffle all" turns every harmony to a new one.
   const shift = stable ? 0 : 1 + Math.floor(Math.random() * (STYLES.length - 1));
+  const offset = stable ? 0 : Math.floor(Math.random() * RECIPES.length);
   /** One palette per entry of `plan`: each of a harmony's palettes gets a different look, and none copies an earlier one. */
   const harmonyBatch = (plan, baseFor, source, seen = []) => generateBatch(plan, baseFor, state.count, {
-    seedFor, shift, distinct: !live, seen,
+    seedFor, shift, offset, distinct: !live, seen: [...seen, ...avoid],
   }).map(({ harmony, base, hexes }) => makePalette(harmony, hexes, taken, { base, source }));
   if (state.mode === 'color') {
     state.palettes = harmonyBatch(planFor(state.total), () => state.base, 'color');
@@ -120,10 +123,10 @@ function generateFresh({ stable = false, live = false } = {}) {
     });
   } else if (state.mode === 'theme') {
     const n = state.total || 9;
-    const seen = [];
+    const seen = [...avoid];
     state.palettes = Array.from({ length: n }, (_, i) => {
       const make = (k) => generateThemeColors(state.themeId, state.count, seedFor(i) + 13 + k * 104729, (i + k) % 3);
-      const hexes = live ? make(0) : pickDistinct(make, seen);
+      const hexes = live ? make(0) : pickDistinct(make, seen, { limit: 0.6, tries: 10, measure: paletteLikeness });
       seen.push(hexes);
       return makePalette(`theme:${state.themeId}`, hexes, taken, { source: 'theme' });
     });

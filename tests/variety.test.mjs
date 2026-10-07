@@ -1,9 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  HARMONIES, STYLES, MIN_COLORS, MAX_COLORS, generateColors, generateDistinct, generateBatch, harmonyPlan, variantFor, paletteSimilarity, pickDistinct,
+  HARMONIES, STYLES, RECIPES, recipeFor, paletteLikeness, MIN_COLORS, MAX_COLORS, generateColors, generateDistinct, generateBatch, harmonyPlan, variantFor, paletteSimilarity, pickDistinct,
 } from '../src/js/harmonies.js';
 import { normalizeHex, colorDistance } from '../src/js/color.js';
+import { namePalette } from '../src/js/names.js';
 
 const COLORFUL = ['#33ADE8', '#E8498F', '#2BB673', '#FFC75F', '#7C5CFF', '#FF0000'];
 const EVERY = [...COLORFUL, '#17213D', '#9AA0A6', '#000000', '#FFFFFF'];
@@ -93,6 +94,59 @@ test('shuffle: the new palette is never a copy of the old one', () => {
         prev = next;
       }
     }
+  }
+});
+
+test('every recipe of every harmony gives the right number of different colors, including your color', () => {
+  for (const base of EVERY) {
+    for (const h of HARMONIES) {
+      for (const recipe of RECIPES) {
+        for (const n of [MIN_COLORS, 9, MAX_COLORS]) {
+          for (const variant of [0, 3, 5]) {
+            const colors = generateColors(base, h.id, n, 77 + n, { variant, recipe });
+            const label = `${base} ${h.id} ${recipe} v${variant} x${n}`;
+            assert.equal(colors.length, n, label);
+            assert.equal(new Set(colors).size, n, label);
+            assert.ok(colors.includes(normalizeHex(base)), label);
+          }
+        }
+      }
+    }
+  }
+});
+
+test('a batch deals out different recipes: neighbours and same-harmony pairs never share one', () => {
+  const plan = harmonyPlan([], 0);
+  for (const offset of [0, 1, 2, 3, 4]) {
+    for (let i = 1; i < plan.length; i++) {
+      assert.notEqual(recipeFor(i, offset), recipeFor(i - 1, offset));
+      if (i >= 7) assert.notEqual(recipeFor(i, offset), recipeFor(i - 7, offset));
+    }
+  }
+});
+
+test('shuffle all: the new batch does not look like the batch it replaces', () => {
+  const plan = harmonyPlan([], 0);
+  for (const base of COLORFUL) {
+    const old = generateBatch(plan, () => base, 8, { seedFor: stableSeed }).map((b) => b.hexes);
+    const fresh = generateBatch(plan, () => base, 8, { seedFor: (i) => 31337 * (i + 3), shift: 3, offset: 2, seen: old }).map((b) => b.hexes);
+    fresh.forEach((p, i) => assert.ok(paletteSimilarity(p, old[i]) < 0.5, `${base} #${i} kept the same colors`));
+    const typical = fresh.reduce((t, p) => t + Math.max(...old.map((o) => paletteLikeness(p, o))), 0) / fresh.length;
+    assert.ok(typical < 0.6, `${base}: new palettes look like old ones (${typical.toFixed(2)})`);
+  }
+});
+
+test('palette names in a batch do not repeat their first or last word', () => {
+  const plan = harmonyPlan([], 0);
+  for (const base of ['#7FD1B9', '#C77DFF', '#2BB673', '#FF6F91', '#33ADE8']) {
+    const taken = new Set();
+    generateBatch(plan, () => base, 8, { seedFor: stableSeed }).forEach((b) => taken.add(namePalette(b.hexes, b.harmony, taken)));
+    const names = [...taken];
+    assert.equal(names.length, 14);
+    const firsts = names.map((n) => n.split(' ')[0]);
+    const lasts = names.map((n) => n.split(' ').slice(-1)[0]);
+    assert.ok(new Set(firsts).size >= 13, `${base}: ${names.join(', ')}`);
+    assert.ok(new Set(lasts).size >= 13, `${base}: ${names.join(', ')}`);
   }
 });
 

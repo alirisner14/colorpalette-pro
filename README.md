@@ -38,7 +38,7 @@
 - **Codes:** every color shows its **HEX and RGB**; tap either to copy. A palette's copy menu copies all its HEX codes, all its RGB codes, or names with both.
 - **Lock colors:** lock the colors you love, then shuffle for new ones. Locked colors stay put.
 - **Editing:** swap any color (suggestions or a custom color), remove colors, add colors, or shuffle a single palette.
-- **Styles:** paint chips (default), hearts, stars, abstract, messy swatches, circles, flowers, clouds, paint drops or hexagons.
+- **Styles:** paint chips (default), hearts, stars, abstract, messy swatches (large or small), circles, flowers, clouds, paint drops or hexagons.
 - **Contrast checker:** WCAG contrast for every pair of colors, and the best text color for each.
 
 ### Swatch Book and Swatch Deck

@@ -47,18 +47,16 @@ export function mirrorX(d) {
   });
 }
 
-/** The two scribbles take turns (wide, tall, then both flipped), so a row of them looks hand-made. */
-const scribble = (index) => {
-  const d = index % 2 ? SCRIBBLE_TALL : SCRIBBLE_WIDE;
-  return Math.floor(index / 2) % 2 ? mirrorX(d) : d;
-};
+/** A scribble that faces the other way on every second chip, so a row of them looks hand-made. */
+const scribble = (d) => (index) => (index % 2 ? mirrorX(d) : d);
 
 export const SHAPES = [
   { id: 'chip', label: 'Paint Chips', path: null },
   { id: 'heart', label: 'Hearts', path: () => HEART },
   { id: 'star', label: 'Stars', path: () => STAR },
   { id: 'blob', label: 'Abstract', path: blob },
-  { id: 'messy', label: 'Messy Swatches', path: scribble },
+  { id: 'messy', label: 'Messy Swatches Lg', path: scribble(SCRIBBLE_TALL) },
+  { id: 'messy-sm', label: 'Messy Swatches Sm', path: scribble(SCRIBBLE_WIDE) },
   { id: 'circle', label: 'Circles', path: () => polar(() => 45) },
   { id: 'flower', label: 'Flowers', path: () => polar((t) => 32 + 14 * Math.abs(Math.cos(2.5 * t)), 180) },
   { id: 'cloud', label: 'Clouds', path: () => CLOUD },

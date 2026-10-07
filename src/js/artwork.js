@@ -81,32 +81,65 @@ export function roleColors(colors, { seed = 0, dark = false } = {}) {
 
 /* ---------- the templates ---------- */
 
+/** A point `r` from (cx, cy) at `deg` degrees (0 = up, clockwise). */
+const polarPt = (cx, cy, r, deg) => [cx + r * Math.cos(rad(deg - 90)), cy + r * Math.sin(rad(deg - 90))];
+
+/**
+ * A mandala petal pointing outwards at `deg`: its base spans `half` degrees either side at radius
+ * r0, and it ends at r1 in a point (`tip` 0) or a rounded tip (`tip` up to 1).
+ */
+export function mandalaPetal(cx, cy, r0, r1, deg, half, { tip = 0, belly = 1 } = {}) {
+  const P = (r, d) => pt(polarPt(cx, cy, r, d));
+  const len = r1 - r0;
+  const mid = r0 + len * 0.5;
+  const w = half * belly;
+  const t = half * tip * 0.75;
+  return `M${P(r0, deg - half)} C${P(mid, deg - w * 1.25)} ${P(r1, deg - t - half * 0.05)} ${P(r1, deg)} `
+    + `C${P(r1, deg + t + half * 0.05)} ${P(mid, deg + w * 1.25)} ${P(r0, deg + half)} Z`;
+}
+
 const mandala = {
   id: 'mandala', name: 'Mandala', kind: 'Coloring page', w: 400, h: 400,
   draw(f) {
     const cx = 200, cy = 200;
+    const line = { stroke: f('line', 'ink'), sw: 1.1 };
     const items = [
       S.rect(0, 0, 400, 400, { fill: f('bg', 'bg'), rid: 'bg' }),
-      S.circle(cx, cy, 196, { fill: f('disc', 'bg2'), rid: 'disc' }),
     ];
-    const rings = [[26, 58, 8], [58, 94, 12], [94, 130, 16], [130, 164, 20], [164, 192, 24]];
-    const cycle = ['m1', 'm2', 'm3', 'm4', 'm5', 'm6'];
-    rings.forEach(([r0, r1, n], k) => {
-      for (let i = 0; i < n; i++) {
-        const a0 = (360 / n) * i + (k % 2 ? 180 / n : 0);
-        items.push(S.path(ringSegment(cx, cy, r0, r1, a0, a0 + 360 / n), {
-          fill: f(`r${k}-${i}`, cycle[(i + k * 2) % 6]), rid: `r${k}-${i}`, stroke: f('bg', 'bg'), sw: 1.4,
-        }));
-      }
-    });
-    for (let i = 0; i < 8; i++) {
-      items.push(S.path(petalPath(cx, cy, i * 45, 54, 21), { fill: f(`p${i}`, i % 2 ? 'pop' : 'bg'), rid: `p${i}`, stroke: f('ink', 'ink'), sw: 0.8 }));
-    }
-    items.push(S.circle(cx, cy, 24, { fill: f('center', 'pop'), rid: 'center', stroke: f('ink', 'ink'), sw: 1 }));
-    for (let i = 0; i < 24; i++) {
-      const a = rad((360 / 24) * i - 90);
-      items.push(S.circle(cx + 178 * Math.cos(a), cy + 178 * Math.sin(a), 4.2, { fill: f('bg', 'bg') }));
-    }
+    const ring = (n, fn) => { for (let i = 0; i < n; i++) items.push(...[].concat(fn(i, (360 / n) * i))); };
+    const petal = (r0, r1, deg, half, rid, role, o = {}) => S.path(mandalaPetal(cx, cy, r0, r1, deg, half, o), { fill: f(rid, role), rid, ...line });
+    const dot = (r, deg, size, rid, role) => {
+      const [x, y] = polarPt(cx, cy, r, deg);
+      return S.circle(x, y, size, { fill: f(rid, role), rid, ...line });
+    };
+
+    // scalloped edge
+    ring(32, (i, a) => dot(176, a + 5.625, 14, 'scallop', 'm6'));
+    items.push(S.circle(cx, cy, 176, { fill: f('edge', 'bg2'), rid: 'edge', ...line }));
+    ring(32, (i, a) => dot(182, a + 5.625, 3, 'edgeDots', 'bg'));
+    items.push(S.circle(cx, cy, 166, { fill: f('field', 'bg'), rid: 'field', ...line }));
+    // outer layer: big pointed petals with smaller ones peeking between them
+    ring(16, (i, a) => petal(100, 152, a + 11.25, 9, 'outerBack', 'm5'));
+    ring(16, (i, a) => [
+      petal(92, 164, a, 12, i % 2 ? 'outerB' : 'outerA', i % 2 ? 'm2' : 'm1'),
+      petal(104, 148, a, 6, 'outerIn', 'bg2'),
+      dot(154, a, 2.6, 'outerDot', 'ink'),
+    ]);
+    // middle layer: rounded petals
+    ring(12, (i, a) => [
+      petal(58, 112, a + 15, 15, i % 2 ? 'midB' : 'midA', i % 2 ? 'm4' : 'm3', { tip: 1, belly: 1.05 }),
+      petal(66, 100, a + 15, 8, 'midIn', 'pop', { tip: 0.8 }),
+      dot(91, a + 15, 3.4, 'midDot', 'bg'),
+    ]);
+    // beaded ring
+    items.push(S.circle(cx, cy, 60, { fill: f('band', 'm6'), rid: 'band', ...line }));
+    ring(24, (i, a) => dot(53, a, 3.4, 'beads', 'bg'));
+    items.push(S.circle(cx, cy, 46, { fill: f('inner', 'bg2'), rid: 'inner', ...line }));
+    // inner flower
+    ring(8, (i, a) => petal(14, 44, a + 22.5, 20, 'innerPetal', 'm1', { tip: 1 }));
+    ring(8, (i, a) => petal(14, 38, a, 13, 'innerPetal2', 'pop', { tip: 0.4 }));
+    items.push(S.circle(cx, cy, 15, { fill: f('center', 'm4'), rid: 'center', ...line }));
+    items.push(S.circle(cx, cy, 6.5, { fill: f('center2', 'bg'), rid: 'center2', ...line }));
     return items;
   },
 };
@@ -168,21 +201,43 @@ const bouquet = {
   },
 };
 
+/**
+ * One band of a rainbow arch: a half ring centred on (cx, y) between radii r0 and r1, with
+ * straight legs running down to `foot`. r0 = 0 gives a solid arch.
+ */
+export function archBand(cx, y, r0, r1, foot, step = 3) {
+  const arc = (r, from, to) => {
+    const n = Math.max(2, Math.ceil(Math.abs(to - from) / step));
+    return Array.from({ length: n + 1 }, (_, i) => polarPt(cx, y, r, from + ((to - from) * i) / n));
+  };
+  const outer = [[cx - r1, foot], ...arc(r1, -90, 90), [cx + r1, foot]];
+  const inner = r0 > 0 ? [[cx + r0, foot], ...arc(r0, 90, -90), [cx - r0, foot]] : [];
+  return poly([...outer, ...inner]);
+}
+
 const geometric = {
   id: 'geometric', name: 'Modern arches', kind: 'Wall art', w: 400, h: 500,
   draw(f) {
+    const foot = 404;
+    const bands = [[134, 160, 'm1'], [106, 130, 'm2'], [78, 102, 'm3'], [50, 74, 'm4']];
     return [
       S.rect(0, 0, 400, 500, { fill: f('bg', 'bg'), rid: 'bg' }),
-      S.path(ringSegment(70, 118, 0, 46, 180, 360), { fill: f('half1', 'm4'), rid: 'half1' }),
-      S.path(ringSegment(338, 84, 0, 38, 0, 180), { fill: f('half2', 'm5'), rid: 'half2' }),
-      S.path('M60 462 L60 250 C60 150 124 96 200 96 C276 96 340 150 340 250 L340 462 Z', { fill: f('arch1', 'm1'), rid: 'arch1' }),
-      S.path('M104 462 L104 262 C104 196 146 150 200 150 C254 150 296 196 296 262 L296 462 Z', { fill: f('arch2', 'm2'), rid: 'arch2' }),
-      S.path('M146 462 L146 274 C146 238 170 212 200 212 C230 212 254 238 254 274 L254 462 Z', { fill: f('arch3', 'bg2'), rid: 'arch3' }),
-      S.circle(200, 258, 38, { fill: f('sun', 'pop'), rid: 'sun' }),
-      S.rect(60, 462, 280, 14, { fill: f('base1', 'm3'), rid: 'base1' }),
-      S.rect(60, 476, 280, 14, { fill: f('base2', 'ink'), rid: 'base2' }),
-      ...[0, 1, 2].flatMap((i) => [0, 1, 2].map((j) => S.circle(46 + i * 18, 400 + j * 18, 5, { fill: f('dots', 'm6'), rid: 'dots' }))),
-      S.path(poly([[350, 410], [378, 462], [322, 462]]), { fill: f('tri', 'm7'), rid: 'tri' }),
+      // the sun sits behind the rainbow, up and to the right
+      S.circle(318, 118, 44, { fill: f('sun', 'pop'), rid: 'sun' }),
+      // a little wave and a grid of dots for texture
+      S.path('M40 92 Q55 78 70 92 Q85 106 100 92 Q115 78 130 92 Q145 106 160 92', { fill: 'none', stroke: f('wave', 'm6'), sw: 5, rid: 'wave' }),
+      ...[0, 1, 2, 3].flatMap((i) => [0, 1, 2].map((j) => S.circle(52 + i * 17, 128 + j * 17, 4, { fill: f('dots', 'm7'), rid: 'dots' }))),
+      // the rainbow, outermost band first
+      ...bands.map(([r0, r1, role], k) => S.path(archBand(200, 300, r0, r1, foot), { fill: f(`arch${k + 1}`, role), rid: `arch${k + 1}` })),
+      S.path(archBand(200, 300, 0, 46, foot), { fill: f('arch5', 'bg2'), rid: 'arch5' }),
+      // ground
+      S.path(`M0 ${foot} L400 ${foot} L400 500 L0 500 Z`, { fill: f('ground', 'm5'), rid: 'ground' }),
+      S.rect(0, foot, 400, 5, { fill: f('groundLine', 'ink'), rid: 'groundLine' }),
+      // small arches in the corner
+      S.path(archBand(342, 448, 0, 30, 470), { fill: f('mini1', 'm4'), rid: 'mini1' }),
+      S.path(archBand(342, 448, 0, 18, 470), { fill: f('mini2', 'm2'), rid: 'mini2' }),
+      S.path(archBand(64, 452, 0, 22, 470), { fill: f('mini3', 'm1'), rid: 'mini3' }),
+      S.rect(28, 470, 344, 6, { r: 3, fill: f('shelf', 'bg'), rid: 'shelf' }),
     ];
   },
 };

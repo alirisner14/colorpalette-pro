@@ -111,48 +111,57 @@ export function nameColors(hexes) {
 }
 
 const THEMES = {
-  red: ['Cherry', 'Ruby', 'Valentine', 'Candy Apple'],
-  coral: ['Coral', 'Papaya', 'Hibiscus'],
-  orange: ['Tangerine', 'Pumpkin', 'Sunset', 'Marmalade'],
-  amber: ['Honey', 'Marigold', 'Golden Hour'],
-  yellow: ['Lemonade', 'Sunshine', 'Buttercup', 'Daffodil'],
-  lime: ['Kiwi', 'Pistachio', 'Key Lime'],
-  green: ['Meadow', 'Clover', 'Fern', 'Garden'],
-  mint: ['Seafoam', 'Mint', 'Sea Glass'],
-  teal: ['Lagoon', 'Mermaid', 'Peacock'],
-  aqua: ['Pool Party', 'Glacier', 'Splash'],
-  sky: ['Bluebird', 'Blue Sky', 'Kite'],
-  blue: ['Ocean', 'Blueberry', 'Moonlit', 'Sailor'],
-  indigo: ['Galaxy', 'Twilight', 'Stargazer'],
-  purple: ['Lavender', 'Grape', 'Violet', 'Potion'],
-  magenta: ['Orchid', 'Berry', 'Unicorn'],
-  pink: ['Bubblegum', 'Peony', 'Strawberry', 'Flamingo'],
-  brown: ['Cocoa', 'Campfire', 'Gingerbread', 'Teddy'],
-  white: ['Marshmallow', 'Linen', 'Snowday'],
-  gray: ['Pebble', 'Moonstone', 'Rainy'],
-  black: ['Midnight', 'Licorice', 'Raven'],
+  red: ['Cherry', 'Ruby', 'Valentine', 'Candy Apple', 'Poppy', 'Cranberry', 'Lipstick'],
+  coral: ['Coral', 'Papaya', 'Hibiscus', 'Guava', 'Grapefruit', 'Watermelon'],
+  orange: ['Tangerine', 'Pumpkin', 'Sunset', 'Marmalade', 'Clementine', 'Creamsicle', 'Mango'],
+  amber: ['Honey', 'Marigold', 'Golden Hour', 'Apricot', 'Butterscotch', 'Caramel'],
+  yellow: ['Lemonade', 'Sunshine', 'Buttercup', 'Daffodil', 'Sunflower', 'Canary'],
+  lime: ['Kiwi', 'Pistachio', 'Key Lime', 'Sprout', 'Matcha', 'Limeade'],
+  green: ['Meadow', 'Clover', 'Fern', 'Garden', 'Moss', 'Willow', 'Shamrock', 'Lily Pad'],
+  mint: ['Seafoam', 'Mint', 'Sea Glass', 'Jade', 'Eucalyptus', 'Spearmint'],
+  teal: ['Lagoon', 'Mermaid', 'Peacock', 'Tide Pool', 'Dragonfly', 'Reef'],
+  aqua: ['Pool Party', 'Glacier', 'Splash', 'Robin Egg', 'Raindrop', 'Waterfall'],
+  sky: ['Bluebird', 'Blue Sky', 'Kite', 'Cornflower', 'Forget-Me-Not', 'Denim'],
+  blue: ['Ocean', 'Blueberry', 'Moonlit', 'Sailor', 'Sapphire', 'Harbor', 'Bluebell'],
+  indigo: ['Galaxy', 'Twilight', 'Stargazer', 'Iris', 'Nightingale', 'Comet'],
+  purple: ['Lavender', 'Grape', 'Violet', 'Potion', 'Lilac', 'Plum', 'Amethyst'],
+  magenta: ['Orchid', 'Berry', 'Unicorn', 'Fuchsia', 'Dragonfruit', 'Jellybean'],
+  pink: ['Bubblegum', 'Peony', 'Strawberry', 'Flamingo', 'Rosebud', 'Cotton Candy', 'Ballet'],
+  brown: ['Cocoa', 'Campfire', 'Gingerbread', 'Teddy', 'Cinnamon', 'Acorn', 'Toffee'],
+  white: ['Marshmallow', 'Linen', 'Snowday', 'Pearl', 'Meringue', 'Porcelain'],
+  gray: ['Pebble', 'Moonstone', 'Rainy', 'Silver', 'Driftwood', 'Slate'],
+  black: ['Midnight', 'Licorice', 'Raven', 'Onyx', 'Ink', 'Shadow'],
 };
 
 const SCENES = {
-  pastel: ['Daydream', 'Lullaby', 'Whisper', 'Sorbet', 'Cloud Castle', 'Tea Party'],
-  light: ['Picnic', 'Breeze', 'Morning', 'Sundae', 'Garden Party'],
-  vivid: ['Fiesta', 'Parade', 'Bonanza', 'Pop', 'Carnival', 'Disco'],
-  mid: ['Jamboree', 'Holiday', 'Story', 'Adventure', 'Playdate'],
-  muted: ['Postcard', 'Memory', 'Afternoon', 'Cottage', 'Scrapbook'],
-  deep: ['Nocturne', 'Velvet', 'Secret', 'Spell', 'Masquerade'],
-  dark: ['After Dark', 'Moonrise', 'Mystery', 'Midnight Feast'],
-  neutral: ['Sketchbook', 'Hush', 'Linen Closet', 'Rainy Day'],
+  pastel: ['Daydream', 'Lullaby', 'Whisper', 'Sorbet', 'Cloud Castle', 'Tea Party', 'Bloom', 'Sugar Rush', 'Pillow Fort'],
+  light: ['Picnic', 'Breeze', 'Morning', 'Sundae', 'Garden Party', 'Lemon Drop', 'Kite Day', 'Sunroom'],
+  vivid: ['Fiesta', 'Parade', 'Bonanza', 'Pop', 'Carnival', 'Disco', 'Confetti', 'Fireworks', 'Jukebox'],
+  mid: ['Jamboree', 'Holiday', 'Story', 'Adventure', 'Playdate', 'Field Trip', 'Market', 'Postcard'],
+  muted: ['Memory', 'Afternoon', 'Cottage', 'Scrapbook', 'Keepsake', 'Heirloom', 'Quilt', 'Bookshop'],
+  deep: ['Nocturne', 'Velvet', 'Secret', 'Spell', 'Masquerade', 'Jewel Box', 'Ballroom', 'Forest Path'],
+  dark: ['After Dark', 'Moonrise', 'Mystery', 'Midnight Feast', 'Lanterns', 'Starlight', 'Hideaway'],
+  neutral: ['Sketchbook', 'Hush', 'Linen Closet', 'Rainy Day', 'Stoneware', 'Paper Trail', 'Studio'],
+};
+const MOOD_NEIGHBOURS = {
+  pastel: ['light'], light: ['pastel', 'mid'], vivid: ['mid'], mid: ['light', 'vivid'],
+  muted: ['neutral', 'mid'], deep: ['dark', 'muted'], dark: ['deep'], neutral: ['muted'],
 };
 
-/** A fitting name for a whole palette, avoiding names in `taken`. */
+/**
+ * A fitting name for a whole palette, avoiding names in `taken`. Within a batch it also avoids
+ * reusing the first or last word of a name already in `taken` (no "Clover Lullaby" next to
+ * "Clover Tea Party"), drawing on the palette's other color families when it has to.
+ */
 export function namePalette(hexes, harmonyId = '', taken = new Set()) {
   const hsl = hexes.map(hexToHsl);
   const avgL = hsl.reduce((a, c) => a + c.l, 0) / hsl.length;
   const avgS = hsl.reduce((a, c) => a + c.s, 0) / hsl.length;
-  // Dominant family = the most common hue family (first color breaks ties).
+  // Families from most to least common (the first color breaks ties).
   const counts = {};
   hexes.forEach((h) => { const f = hueFamily(h); counts[f] = (counts[f] || 0) + 1; });
-  const family = Object.keys(counts).reduce((a, b) => (counts[b] > counts[a] ? b : a), hueFamily(hexes[0]));
+  const first = hueFamily(hexes[0]);
+  const families = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || (b === first) - (a === first));
   let mood = 'mid';
   if (avgS < 0.1) mood = 'neutral';
   else if (avgL > 0.72) mood = 'pastel';
@@ -162,17 +171,32 @@ export function namePalette(hexes, harmonyId = '', taken = new Set()) {
   else if (avgS > 0.65) mood = 'vivid';
   else if (avgL > 0.58) mood = 'light';
 
-  const themes = THEMES[family];
-  const scenes = SCENES[mood];
   const seed = hashString(hexes.join('') + harmonyId);
-  const total = themes.length * scenes.length;
-  for (let i = 0; i < total; i++) {
-    const k = (seed + i * 104729) % total;
-    const name = `${themes[k % themes.length]} ${scenes[Math.floor(k / themes.length)]}`;
-    if (!taken.has(name)) return name;
+  const rotate = (list, k) => list.map((_, i) => list[(i + k) % list.length]);
+  // Themes from the main family first, then the others; scenes for this mood, then its neighbours.
+  const themes = families.flatMap((f, rank) => rotate(THEMES[f], seed % THEMES[f].length).map((t) => [t, rank]));
+  const scenes = [SCENES[mood], ...MOOD_NEIGHBOURS[mood].map((m) => SCENES[m])]
+    .flatMap((list, rank) => rotate(list, (seed >>> 8) % list.length).map((s) => [s, rank]));
+  const names = [...taken];
+  const usedStart = (t) => names.filter((n) => n === t || n.startsWith(`${t} `)).length;
+  const usedEnd = (s) => names.filter((n) => n.endsWith(` ${s}`)).length;
+
+  let best = null;
+  let bestScore = Infinity;
+  for (const [t, tr] of themes) {
+    const tUsed = usedStart(t);
+    for (const [s, sr] of scenes) {
+      const name = `${t} ${s}`;
+      if (taken.has(name)) continue;
+      // a repeated word costs far more than reaching for a second color family or a nearby mood
+      const score = tUsed * 10 + usedEnd(s) * 6 + tr * 1.5 + sr * 1.2;
+      if (score < bestScore) { best = name; bestScore = score; }
+      if (score === 0) return name;
+    }
   }
+  if (best) return best;
   let n = 2;
-  const fallback = `${themes[0]} ${scenes[0]}`;
+  const fallback = `${themes[0][0]} ${scenes[0][0]}`;
   while (taken.has(`${fallback} ${n}`)) n++;
   return `${fallback} ${n}`;
 }

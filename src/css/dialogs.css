@@ -14,6 +14,7 @@
 .photo-remove:hover { transform: scale(1.12); }
 
 .sheet-wide { width: min(94vw, 980px); }
+@media (max-width: 640px) { .sheet-wide { width: 100vw; } } /* phones: a full-width bottom sheet like the others */
 .dlg-body { display: flex; flex-direction: column; gap: 14px; }
 .dlg-section { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px solid var(--line); }
 .dlg-section:first-child { border-top: 0; padding-top: 0; }
