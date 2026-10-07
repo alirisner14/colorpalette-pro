@@ -1,5 +1,6 @@
 // Swatch shapes as SVG path strings in a 100x100 box. The same strings are
 // used for on-screen SVG and for canvas export (via Path2D).
+import { makeRng } from './color.js';
 import {
   HEART, STAR, CLOUD, SCRIBBLE_WIDE, SCRIBBLE_TALL,
 } from './shapedata.js';
@@ -27,6 +28,14 @@ function polygon(points, radius, inner = null, rotate = -Math.PI / 2) {
   return `M${pts.join(' L')} Z`;
 }
 
+/** A soft, lumpy shape that is a little different for every chip. */
+function blob(index) {
+  const rng = makeRng(1000 + index * 37);
+  const [a, b, c] = [rng() * 6.28, rng() * 6.28, rng() * 6.28];
+  const [k1, k2] = [2 + Math.floor(rng() * 2), 3 + Math.floor(rng() * 3)];
+  return polar((t) => 38 + 6 * Math.sin(k1 * t + a) + 4 * Math.sin(k2 * t + b) + 2.5 * Math.sin(7 * t + c));
+}
+
 /** Flip a path left to right inside the 100x100 box (absolute coordinates only). */
 export function mirrorX(d) {
   let argument = 0;
@@ -38,15 +47,18 @@ export function mirrorX(d) {
   });
 }
 
-/** The scribbles take turns facing each way, so a row of them looks hand-made. */
-const scribble = (d) => (index) => (index % 2 ? mirrorX(d) : d);
+/** The two scribbles take turns (wide, tall, then both flipped), so a row of them looks hand-made. */
+const scribble = (index) => {
+  const d = index % 2 ? SCRIBBLE_TALL : SCRIBBLE_WIDE;
+  return Math.floor(index / 2) % 2 ? mirrorX(d) : d;
+};
 
 export const SHAPES = [
   { id: 'chip', label: 'Paint Chips', path: null },
   { id: 'heart', label: 'Hearts', path: () => HEART },
   { id: 'star', label: 'Stars', path: () => STAR },
-  { id: 'blob', label: 'Abstract', path: scribble(SCRIBBLE_TALL) },
-  { id: 'messy', label: 'Messy Swatches', path: scribble(SCRIBBLE_WIDE) },
+  { id: 'blob', label: 'Abstract', path: blob },
+  { id: 'messy', label: 'Messy Swatches', path: scribble },
   { id: 'circle', label: 'Circles', path: () => polar(() => 45) },
   { id: 'flower', label: 'Flowers', path: () => polar((t) => 32 + 14 * Math.abs(Math.cos(2.5 * t)), 180) },
   { id: 'cloud', label: 'Clouds', path: () => CLOUD },

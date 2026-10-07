@@ -6,7 +6,7 @@
 //   slow or missing connection it answers from the stored copy.
 // - It only ever stores files from that list, so nothing else piles up.
 // - On activation it deletes every older version of its cache.
-const VERSION = 'cpp-v1.0.2';
+const VERSION = 'cpp-v1.0.3';
 const PREFIX = 'cpp-';
 const SHELL = /*SHELL:START*/[
   './',

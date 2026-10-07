@@ -33,14 +33,21 @@ test('the shapes keep the proportions of the artwork', () => {
   assert.ok(ratio(SCRIBBLE_TALL) > 0.8 && ratio(SCRIBBLE_TALL) < 1, 'a tall scribble');
 });
 
-test('hearts, stars, clouds and the two scribble shapes use the supplied outlines', () => {
+test('hearts, stars, clouds and messy swatches use the supplied outlines; Abstract keeps its own lumpy shapes', () => {
   assert.equal(getShape('heart').path(0), HEART);
   assert.equal(getShape('star').path(3), STAR);
   assert.equal(getShape('cloud').path(1), CLOUD);
   assert.equal(getShape('messy').path(0), SCRIBBLE_WIDE);
-  assert.equal(getShape('blob').path(0), SCRIBBLE_TALL);
+  assert.equal(getShape('messy').path(1), SCRIBBLE_TALL);
   // the cloud no longer looks like a flower
   assert.notEqual(getShape('cloud').path(0), getShape('flower').path(0));
+  // Abstract is the original generated blob, a little different for every chip
+  const blob = getShape('blob');
+  assert.equal(blob.label, 'Abstract');
+  assert.ok([HEART, STAR, CLOUD, SCRIBBLE_WIDE, SCRIBBLE_TALL].every((d) => d !== blob.path(0)));
+  assert.equal(blob.path(0), blob.path(0));
+  assert.notEqual(blob.path(0), blob.path(1));
+  assert.match(blob.path(0), /^M[\d. L-]+ Z$/);
 });
 
 test('mirroring flips a path left to right, and flipping twice gives the original back', () => {
@@ -55,13 +62,14 @@ test('mirroring flips a path left to right, and flipping twice gives the origina
   }
 });
 
-test('scribbles take turns facing each way; the other shapes never change', () => {
-  for (const id of ['messy', 'blob']) {
-    const s = getShape(id);
-    assert.notEqual(s.path(0), s.path(1), id);
-    assert.equal(s.path(0), s.path(2), id);
-    assert.equal(s.path(1), s.path(3), id);
-  }
+test('the two scribbles take turns and then face the other way; the plain shapes never change', () => {
+  const messy = getShape('messy');
+  assert.equal(messy.path(0), SCRIBBLE_WIDE);
+  assert.equal(messy.path(1), SCRIBBLE_TALL);
+  assert.equal(messy.path(2), mirrorX(SCRIBBLE_WIDE));
+  assert.equal(messy.path(3), mirrorX(SCRIBBLE_TALL));
+  assert.equal(messy.path(4), messy.path(0));
+  assert.equal(messy.path(5), messy.path(1));
   for (const id of ['heart', 'star', 'cloud', 'circle', 'flower', 'drop', 'hexagon']) {
     assert.equal(getShape(id).path(0), getShape(id).path(5), id);
   }

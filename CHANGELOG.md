@@ -8,6 +8,11 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 Nothing yet.
 
+## [1.0.3] — 2026-10-06
+
+### Changed
+- **Abstract** is back to its original lumpy shapes (a little different for every chip). **Messy Swatches** uses both of the supplied scribbles, taking turns (wide, tall, then both flipped).
+
 ## [1.0.2] — 2026-10-06
 
 ### Fixed
