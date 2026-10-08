@@ -1,6 +1,6 @@
 import { normalizeHex, readableText, hslToHex, hexToHsl, rgbString, rgbToHex, parseColorCodes, wrapHue, hexToOklch, oklchToHex, GOLDEN_ANGLE } from './color.js';
 import {
-  HARMONIES, MIN_COLORS, MAX_COLORS, STYLES, RECIPES, generateBatch, generateDistinct, pickDistinct, paletteLikeness, swapOptions, harmonyPlan, PER_TYPE_DEFAULT,
+  FOUNDATIONS, MIN_COLORS, MAX_COLORS, AUTO_PALETTES, generateBatch, generateDistinct, pickDistinct, paletteLikeness, swapOptions, foundationPlan,
 } from './harmonies.js';
 import { nameColor, nameColors, namePalette } from './names.js';
 import { SHAPES, getShape } from './shapes.js';
@@ -33,7 +33,8 @@ const state = {
   base: normalizeHex(prefs.base) || '#33ADE8',
   count: Math.min(MAX_COLORS, Math.max(MIN_COLORS, Number(prefs.count) || 8)),
   shape: getShape(prefs.shape).id,
-  filter: Array.isArray(prefs.filter) ? prefs.filter.filter((id) => HARMONIES.some((h) => h.id === id)) : [],
+  // A harmony to lean toward ('' = anything). Older versions saved a list of harmonies to filter by.
+  lean: FOUNDATIONS.some((h) => h.id === prefs.lean) ? prefs.lean : '',
   total: Number(prefs.total) || 0, // 0 = auto
   themeId: getTheme(prefs.themeId).id,
   photo: null, // { thumb (data URL), pixels, colors }
@@ -50,7 +51,7 @@ function newDraft() {
 
 const savePrefs = () => persistPrefs({
   mode: state.mode, base: state.base, count: state.count, shape: state.shape,
-  filter: state.filter, total: state.total, themeId: state.themeId, draft: state.draft, moodText: state.mood.text,
+  lean: state.lean, total: state.total, themeId: state.themeId, draft: state.draft, moodText: state.mood.text,
 });
 
 /* ================= palette generation ================= */
@@ -64,10 +65,10 @@ function makePalette(harmony, hexes, taken, extra = {}) {
   return { id: uid(), name, harmony, colors: hexes.map((hex, i) => ({ hex, name: names[i] })), createdAt: new Date().toISOString(), ...extra };
 }
 
-/** How many harmony palettes to make when `total` may be auto (0). */
-function planFor(total) {
+/** The backbone of each palette to make; `total` 0 means auto. The same `seed` gives the same plan. */
+function planFor(total, seed) {
   if (total < 0) return [];
-  return harmonyPlan(state.filter, total);
+  return foundationPlan(state.lean, total || AUTO_PALETTES, seed);
 }
 
 /** Make a fresh set of palettes; locked colors from the previous set carry over. */
@@ -86,15 +87,13 @@ function generate(opts = {}) {
 function generateFresh({ stable = false, live = false, avoid = [] } = {}) {
   const taken = new Set();
   const seedFor = (i) => (stable ? 7919 * (i + 1) : randSeed());
-  // A stable batch always starts with the classic look; "shuffle all" turns every harmony to a new one.
-  const shift = stable ? 0 : 1 + Math.floor(Math.random() * (STYLES.length - 1));
-  const offset = stable ? 0 : Math.floor(Math.random() * RECIPES.length);
-  /** One palette per entry of `plan`: each of a harmony's palettes gets a different look, and none copies an earlier one. */
+  const planSeed = stable ? 1 : randSeed();
+  /** One palette per entry of `plan`, none of them a near-copy of another. */
   const harmonyBatch = (plan, baseFor, source, seen = []) => generateBatch(plan, baseFor, state.count, {
-    seedFor, shift, offset, distinct: !live, seen: [...seen, ...avoid],
-  }).map(({ harmony, base, hexes }) => makePalette(harmony, hexes, taken, { base, source }));
+    seedFor, distinct: !live, seen: [...seen, ...avoid],
+  }).map(({ harmony, foundation, base, hexes }) => makePalette(harmony, hexes, taken, { base, source, foundation }));
   if (state.mode === 'color') {
-    state.palettes = harmonyBatch(planFor(state.total), () => state.base, 'color');
+    state.palettes = harmonyBatch(planFor(state.total, planSeed), () => state.base, 'color');
   } else if (state.mode === 'photo') {
     if (!state.photo) { state.palettes = []; return; }
     const pure = extractPhotoColors(state.photo.pixels, state.count, 7);
@@ -104,7 +103,7 @@ function generateFresh({ stable = false, live = false, avoid = [] } = {}) {
     const bases = pure.slice(0, Math.min(3, pure.length));
     // "Palettes to show" counts the photo palette too.
     const rest = state.total ? state.total - 1 : 0;
-    const plan = state.total && rest === 0 ? [] : planFor(rest);
+    const plan = state.total && rest === 0 ? [] : planFor(rest, planSeed);
     state.palettes = [first, ...harmonyBatch(plan, (i) => bases[i % bases.length], 'photo', [pure])];
   } else if (state.mode === 'mood') {
     const text = state.mood.text.trim();
@@ -209,18 +208,18 @@ function renderShapePicker() {
   }).join('');
 }
 
-function renderFilter() {
-  $('#harmony-filter').innerHTML = HARMONIES.map((h) => {
-    const on = state.filter.includes(h.id);
-    return `<button type="button" class="fchip ${on ? 'is-on' : ''}" aria-pressed="${on}" data-harmony="${h.id}" title="${esc(h.blurb)}">${esc(h.label)}</button>`;
-  }).join('');
-  $('#filter-clear').hidden = !state.filter.length;
+function renderLean() {
+  $('#lean').innerHTML = `<option value="">Anything goes</option>${FOUNDATIONS.map((h) => `<option value="${h.id}">${esc(h.label)}</option>`).join('')}`;
+  $('#lean').value = state.lean;
+  const h = FOUNDATIONS.find((x) => x.id === state.lean);
+  $('#lean-note').textContent = h
+    ? `${h.blurb} Two in every three palettes lean this way; the rest stay a surprise.`
+    : 'Every palette is a surprise built around your color.';
 }
 
 function renderTotal() {
   const auto = !state.total;
-  const types = state.filter.length || HARMONIES.length;
-  const autoN = state.mode === 'theme' || state.mode === 'mood' ? 9 : types * PER_TYPE_DEFAULT + (state.mode === 'photo' ? 1 : 0);
+  const autoN = state.mode === 'theme' || state.mode === 'mood' ? 9 : AUTO_PALETTES + (state.mode === 'photo' ? 1 : 0);
   $('#total-auto').setAttribute('aria-pressed', auto);
   $('#total-auto').classList.toggle('is-on', auto);
   $('#total').classList.toggle('is-auto', auto);
@@ -369,8 +368,8 @@ function shufflePalette(id) {
       const res = moodPalettes(old.moodText, { count: state.count, variants: 9, seed: randSeed() });
       return (res.palettes.find((m) => m.variant === old.variant) ?? res.palettes[0]).hexes;
     }, before);
-  } else hexes = generateDistinct(old.base, old.harmony, state.count, randSeed(), {}, before);
-  const fresh = makePalette(old.harmony, hexes, taken, { base: old.base, source: old.source, moodText: old.moodText, variant: old.variant });
+  } else hexes = generateDistinct(old.base, old.foundation ?? old.harmony, state.count, randSeed(), before);
+  const fresh = makePalette(old.harmony, hexes, taken, { base: old.base, source: old.source, foundation: old.foundation, moodText: old.moodText, variant: old.variant });
   if (old.harmony === 'mood') fresh.name = old.name;
   if (hasLocks(old)) fresh.colors = mergeLocked(old.colors, hexes, state.count);
   state.palettes[i] = fresh;
@@ -685,7 +684,7 @@ function init() {
   wheel.setHex(state.base);
   renderBase();
   renderShapePicker();
-  renderFilter();
+  renderLean();
   renderThemes();
   renderMode();
   renderTotal();
@@ -750,20 +749,9 @@ function init() {
   });
   $('#count').addEventListener('change', () => regenerate({ stable: true, animate: false }));
 
-  $('#harmony-filter').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-harmony]');
-    if (!b) return;
-    const id = b.dataset.harmony;
-    state.filter = state.filter.includes(id) ? state.filter.filter((x) => x !== id) : [...state.filter, id];
-    renderFilter();
-    renderTotal();
-    regenerate({ stable: true });
-    savePrefs();
-  });
-  $('#filter-clear').addEventListener('click', () => {
-    state.filter = [];
-    renderFilter();
-    renderTotal();
+  $('#lean').addEventListener('change', (e) => {
+    state.lean = e.target.value;
+    renderLean();
     regenerate({ stable: true });
     savePrefs();
   });

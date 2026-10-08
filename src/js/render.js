@@ -70,7 +70,7 @@ export function paletteHtml(p, { shapeId = 'chip', saved = false, editable = tru
     <header class="palette-head">
       <div class="palette-title">
         <h2 class="palette-name"><button type="button" class="name-btn" data-action="rename" data-pid="${p.id}" title="Rename palette" ${editable ? '' : 'disabled'}>${esc(p.name)} <span class="pencil">${ICONS.pencil}</span></button></h2>
-        <p class="palette-meta"><span class="pill" title="${esc(blurb)}">${esc(typeLabel(p))}</span>${p.colors.length} colors${source}${mood}${lockNote}</p>
+        <p class="palette-meta">${typeLabel(p) ? `<span class="pill" title="${esc(blurb)}">${esc(typeLabel(p))}</span>` : ''}${p.colors.length} colors${source}${mood}${lockNote}</p>
       </div>
       <div class="palette-actions">${actions.map((a) => btn[a] ?? a).join('')}</div>
     </header>

@@ -8,6 +8,22 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 Nothing yet.
 
+## [1.1.0] — 2026-10-08
+
+### Changed
+- **New palette generator: curated, organic palettes instead of tints and shades.**
+  - A harmony is now only the backbone: it places the first 3–4 colors, each drifted 10–25° off the exact spot on the wheel,
+    so palettes feel hand-picked.
+  - No hue appears in more than two versions; every other color is a new hue.
+  - Every palette must reach from very dark to very light, and mix bright colors with muted ones and neutrals (creams,
+    taupes, grays, charcoals). The generator checks this and fixes any palette that falls short.
+  - Every palette gets one or two **wildcard** pops from the emptiest part of the color wheel.
+  - Neutrals are scattered through the palette instead of always sitting at the end.
+- **Harmony labels are gone from everyday palettes.** The harmony chips are replaced by an optional **Lean toward**
+  dropdown. "Anything goes" (the default) gives surprise palettes with no labels; choosing a harmony makes two in every three
+  palettes use it (and say so), and the rest stay a surprise.
+- Palettes saved by earlier versions keep their labels.
+
 ## [1.0.5] — 2026-10-07
 
 ### Changed

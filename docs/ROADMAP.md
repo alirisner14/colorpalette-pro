@@ -2,7 +2,7 @@
 
 ## 1.0: Web (built)
 - [x] Color, Photo, Theme, Mood and Build modes
-- [x] Harmony filter, 2 of each by default, adjustable palette count
+- [x] Organic palettes (harmony as a hidden backbone, drift, neutrals, wildcards, contrast rules), optional "lean toward" a harmony, adjustable palette count
 - [x] HEX and RGB on every color, with copy
 - [x] Exports to 12 formats covering Procreate, Adobe, Affinity, GIMP/Krita, Sketch, Figma/Canva and the web
 - [x] Swatch Book (flipbook) and Swatch Deck (fan), with tabs, drag and drop, a full-screen viewer, Customize and covers
@@ -25,6 +25,10 @@
 - [ ] Test the cut files on more cutting machines (Cricut, Silhouette, Brother) and adjust
 
 ## Ideas that set it apart
+- [ ] **Thumbs up / neutral / down on palettes** to learn what you like (idea, not decided). Each rating would note a
+  palette's character (how light, how colorful, how many neutrals, warm or cool, how many wildcards, which backbone), and new
+  batches would lean toward liked traits and show the closest matches first, while always keeping some surprises.
+  Ratings would stay on the device, so the Privacy Policy, Settings and "Delete all my data" need updating first.
 - [ ] **Gradients** generated from any palette, exported as CSS or image
 - [ ] **Palette of the day** with a gentle streak
 - [ ] **Colorblind preview:** see a palette as people with protanopia, deuteranopia or tritanopia do (not planned for now)

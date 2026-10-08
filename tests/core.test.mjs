@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { hexToRgb, rgbToHex, hexToHsl, hslToHex, hexToHsv, hsvToHex, normalizeHex, readableText, parseColorCodes } from '../src/js/color.js';
-import { HARMONIES, MIN_COLORS, MAX_COLORS, generateColors, distribute, swapOptions, harmonyPlan, typeLabel } from '../src/js/harmonies.js';
+import { HARMONIES, FOUNDATIONS, AUTO_PALETTES, MIN_COLORS, MAX_COLORS, generateColors, distribute, swapOptions, foundationPlan, typeLabel } from '../src/js/harmonies.js';
+import { hexToOklch } from '../src/js/color.js';
 import { nameColor, nameColors, namePalette, hueFamily } from '../src/js/names.js';
 import { SHAPES } from '../src/js/shapes.js';
 import { createZip, crc32 } from '../src/js/zip.js';
@@ -45,10 +46,12 @@ test('generation is reproducible with a seed', () => {
   assert.deepEqual(generateColors('#33ADE8', 'random', 9, 7), generateColors('#33ADE8', 'random', 9, 7));
 });
 
-test('complementary palette contains a hue roughly opposite the base', () => {
-  const colors = generateColors('#FF0000', 'complementary', 8, 1);
-  const hues = colors.map((c) => hexToHsl(c).h);
-  assert.ok(hues.some((h) => Math.abs(h - 180) < 15));
+test('a complementary backbone puts a color roughly opposite yours (drifted, not exact)', () => {
+  for (let seed = 1; seed <= 20; seed++) {
+    const own = hexToOklch('#FF0000').h;
+    const hues = generateColors('#FF0000', 'complementary', 8, seed).map(hexToOklch).filter((c) => c.c > 0.045).map((c) => c.h);
+    assert.ok(hues.some((h) => Math.abs(((h - own + 540) % 360) - 180) > 150), `seed ${seed}`);
+  }
 });
 
 test('swap options exclude the current palette', () => {
@@ -114,14 +117,18 @@ test('file names are sanitized', () => {
   assert.equal(safeFileName(''), 'palette');
 });
 
-test('harmony plan gives 2 of each type by default, or round-robins a set total', () => {
-  const auto = harmonyPlan();
-  assert.equal(auto.length, HARMONIES.length * 2);
-  HARMONIES.forEach((h) => assert.equal(auto.filter((x) => x === h.id).length, 2));
-  assert.deepEqual(harmonyPlan(['triadic', 'monochrome']), ['triadic', 'monochrome', 'triadic', 'monochrome']);
-  assert.deepEqual(harmonyPlan(['analogous'], 3), ['analogous', 'analogous', 'analogous']);
-  assert.equal(harmonyPlan([], 5).length, 5);
-  assert.ok(!HARMONIES.some((h) => h.id === 'split-analogous'));
+test('the plan deals every backbone out when nothing is chosen, and leans two in three when one is', () => {
+  const auto = foundationPlan('', AUTO_PALETTES, 1);
+  assert.equal(auto.length, 14);
+  assert.ok(auto.every((p) => !p.shown), 'no labels unless you choose a harmony');
+  FOUNDATIONS.forEach((h) => assert.ok(auto.filter((p) => p.foundation === h.id).length >= 2, h.id));
+  for (let i = 1; i < auto.length; i++) assert.notEqual(auto[i].foundation, auto[i - 1].foundation);
+  assert.deepEqual(foundationPlan('', 14, 1), auto, 'the same seed gives the same plan');
+  const lean = foundationPlan('triadic', 9, 2);
+  assert.equal(lean.filter((p) => p.foundation === 'triadic' && p.shown).length, 6);
+  assert.equal(lean.filter((p) => !p.shown && p.foundation !== 'triadic').length, 3, 'a lean is a preference, not a filter');
+  assert.equal(foundationPlan('', 5, 1).length, 5);
+  assert.ok(foundationPlan('random', 6, 1).every((p) => !p.shown), 'random is not something to lean toward');
 });
 
 test('type labels cover harmonies, themes, photos and handmade palettes', () => {
@@ -129,6 +136,8 @@ test('type labels cover harmonies, themes, photos and handmade palettes', () => 
   assert.equal(typeLabel({ harmony: 'theme:ocean' }), 'Ocean Breeze');
   assert.equal(typeLabel({ harmony: 'photo-pure' }), 'Straight from your photo');
   assert.equal(typeLabel({ harmony: 'custom' }), 'Handmade');
+  assert.equal(typeLabel({ harmony: 'organic' }), '', 'everyday palettes have no label');
+  assert.equal(typeLabel({ harmony: 'random' }), 'Random', 'palettes saved by older versions keep theirs');
 });
 
 test('pasted HEX and RGB codes are parsed', () => {

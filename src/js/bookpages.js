@@ -12,7 +12,7 @@ import { artPageItems } from './printable.js';
 import { coverScene } from './cover.js';
 import { showFor } from './bookopts.js';
 import { ellipsize, wrapText, textWidth } from './textmetrics.js';
-import { generateColors } from './harmonies.js';
+import { generateColors, ORGANIC } from './harmonies.js';
 import { nameColors } from './names.js';
 
 /** Page sizes in layout units (about millimetres). The screen scales them to fit. */
@@ -165,7 +165,7 @@ export function sampleBook() {
     const hexes = generateColors(base, harmony, 8, 11 * (i + 1));
     const names = nameColors(hexes);
     const id = `sample-${i}`;
-    palettes[id] = { id, name, harmony, colors: hexes.map((hex, k) => ({ hex, name: names[k] })) };
+    palettes[id] = { id, name, harmony: ORGANIC, foundation: harmony, colors: hexes.map((hex, k) => ({ hex, name: names[k] })) };
     ids.push(id);
   });
   return { version: 1, sections: [{ id: 'sample', name: 'My Palettes', color: TAB_COLORS[3], ids }], palettes };

@@ -541,3 +541,4 @@ body.viewer-open { overflow: hidden; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .blob { animation: none; }
 }
+.lean-note { margin: 6px 2px 0; font-size: .78rem; line-height: 1.35; }

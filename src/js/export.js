@@ -111,7 +111,7 @@ export async function paletteImageBlob(palette, shapeId = 'chip', { type = 'imag
   ctx.fillStyle = '#4B6390';
   ctx.font = '600 34px Nunito, system-ui, sans-serif';
   const from = palette.base ? ` · from ${palette.base}` : '';
-  ctx.fillText(`${typeLabel(palette)} · ${n} colors${from}`, pad, 186);
+  ctx.fillText(`${[typeLabel(palette), `${n} colors`].filter(Boolean).join(' · ')}${from}`, pad, 186);
 
   const shape = getShape(shapeId);
   palette.colors.forEach((c, i) => {

@@ -162,8 +162,9 @@
               <input id="count" type="range" min="6" max="15" value="8">
             </label>
             <div class="field" data-for="color photo">
-              <span class="field-label">Harmonies <button type="button" class="link-btn" id="filter-clear">Mix of all</button></span>
-              <div class="fchips" id="harmony-filter" role="group" aria-label="Harmony filter"></div>
+              <label class="field-label" for="lean">Lean toward</label>
+              <span class="select-wrap glass-inset"><select id="lean"></select></span>
+              <p class="lean-note muted" id="lean-note"></p>
             </div>
             <div class="field" data-for="color photo theme mood">
               <span class="field-label">Palettes to show <output id="total-out">Auto</output></span>

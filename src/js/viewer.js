@@ -21,7 +21,7 @@ function render(id) {
   $('#v-tab').textContent = s?.name ?? '';
   $('#v-tab').style.setProperty('--c', s?.color ?? '#ccc');
   $('#v-name').textContent = p.name;
-  $('#v-meta').textContent = `${typeLabel(p)} · ${p.colors.length} colors`;
+  $('#v-meta').textContent = [typeLabel(p), `${p.colors.length} colors`].filter(Boolean).join(' · ');
   $('#v-colors').innerHTML = p.colors.map((c, i) => `<div class="v-stripe" style="--c:${c.hex};--fg:${readableText(c.hex)};--i:${i}">
       <span class="v-name">${esc(c.name)}</span>
       <button type="button" class="v-code" data-copy="${c.hex}">${c.hex}</button>

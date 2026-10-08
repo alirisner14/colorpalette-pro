@@ -22,17 +22,20 @@
 | Mode | What it does |
 |---|---|
 | **Color** | Pick a color with the wheel or brightness slider, type a hex code, pick from the screen (EyeDropper API), or pick from an image |
-| **Photo** | Drop, choose or paste a photo. The first palette uses **only colors taken from the photo's own pixels**; the rest are harmony palettes built around its main colors |
+| **Photo** | Drop, choose or paste a photo. The first palette uses **only colors taken from the photo's own pixels**; the rest are palettes built around its main colors |
 | **Theme** | 24 themes (Spring, Halloween, Ocean, Cottagecore, Neon Nights, …) chosen from a dropdown or emoji tiles. No starting color needed |
 | **Mood** | Type "rainy café" or "cozy winter" and get palettes for it. Understands words like dark, soft, vivid, warm and vintage |
 | **Build** | Make your own palette: add the color on the wheel, paste a list of HEX/RGB codes, or import a palette file (1–30 colors) |
 
 ### Palettes
-- **Harmonies:** Complementary, Analogous, Triadic, Tetradic, Split Complementary, Monochrome and Random.
-  By default you get **2 of each**. You can filter to the harmonies you want and set how many palettes to show (1–40).
+- **Curated, not computed:** each palette is built like a surface designer would build it. A classic harmony (complementary,
+  triadic, …) quietly places the first 3–4 colors, each drifted 10–25° off its textbook spot. The rest are new hues, soft
+  neutrals (creams, taupes, grays, charcoals) and one or two **wildcard** pops that break the rule on purpose.
+  No hue appears in more than two versions, and every palette reaches from very dark to very light and from muted to bright.
+- **Lean toward a harmony** (optional): two in every three palettes use it and are labelled; the rest stay a surprise.
+  With "Anything goes" (the default) no harmony labels are shown. You choose how many palettes to show (1–40, 14 by default).
 - **Size:** 6–15 colors per palette.
-- **Variety:** every harmony comes in several looks (classic, soft, deep, muted, vivid, airy, dusk, contrast), so the palettes on
-  your dashboard, and every shuffle, are really different.
+- **Variety:** the palettes on your dashboard, and every shuffle, are really different from each other.
 - **Mockups:** every palette has a **Show artwork** button that paints it onto example artwork and mockups.
 - **Names:** every color gets a cute, unique name and every palette a fitting name. Names can be edited.
 - **Codes:** every color shows its **HEX and RGB**; tap either to copy. A palette's copy menu copies all its HEX codes, all its RGB codes, or names with both.
