@@ -8,6 +8,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 Nothing yet.
 
+## [1.2.2] — 2026-10-13
+
+### Changed
+- **Bringing a backup from another device adds, it doesn't overwrite.** "Add the new palettes" is now the main choice: your swatch book stays exactly as it is, and only the palettes it doesn't have yet arrive in a tab named after the device they came from ("From iPad", "From PC", "From iPhone"…). The same tab is reused next time. "Replace my swatch book" is still there as a secondary choice for setting up a new device.
+- Backups now record the kind of device that made them (only "iPad", "PC" and so on). Privacy Policy updated.
+
 ## [1.2.1] — 2026-10-13
 
 ### Changed

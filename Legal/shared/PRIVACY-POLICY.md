@@ -80,7 +80,10 @@ the palettes you choose to import are kept.
   files, images, PDFs, SVGs, and flipbook or data backups) and hand them to
   your browser to save. Where they are saved, and who can see them there, is
   up to you. A backup contains your whole swatch book, including any cover
-  pictures, so keep it as private as you would keep the palettes themselves.
+  pictures, and the kind of device it came from (such as "iPad" or "PC", so
+  palettes added on another device can go in a "From iPad" tab). Nothing else
+  about the device is recorded. Keep a backup as private as you would keep the
+  palettes themselves.
 - **Share a file** (on phones and tablets) hands your file to your device's
   own share sheet. Where it goes next is your choice.
 

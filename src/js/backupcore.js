@@ -18,13 +18,31 @@ const str = (v, max) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f
 const ID = /^[\w.:-]{1,80}$/;
 const SOURCES = ['color', 'photo', 'theme', 'mood', 'custom', 'import'];
 
+/**
+ * A friendly name for the kind of device, e.g. "iPad", "iPhone", "PC", "Mac". Only the kind of
+ * device, never anything that identifies it. `nav` is the browser's navigator (or a stand-in in tests).
+ */
+export function deviceName(nav = {}) {
+  const ua = String(nav.userAgent || '');
+  const touch = (nav.maxTouchPoints || 0) > 1;
+  if (/iPad/.test(ua) || (/Macintosh/.test(ua) && touch)) return 'iPad'; // iPads ask for the desktop site
+  if (/iPhone|iPod/.test(ua)) return 'iPhone';
+  if (/Android/.test(ua)) return /Mobile/.test(ua) ? 'Android phone' : 'Android tablet';
+  if (/CrOS/.test(ua)) return 'Chromebook';
+  if (/Macintosh|Mac OS X/.test(ua)) return 'Mac';
+  if (/Windows/.test(ua)) return 'PC';
+  if (/Linux/.test(ua)) return 'computer';
+  return 'another device';
+}
+
 /** The backup as a plain object, ready to be saved as JSON or embedded in the flipbook page. */
-export function makeBackup({ book, opts, covers = {}, now = new Date() }) {
+export function makeBackup({ book, opts, covers = {}, now = new Date(), device = '' }) {
   return {
     type: BACKUP_TYPE,
     version: BACKUP_VERSION,
     app: { name: APP_NAME, version: APP_VERSION },
     createdAt: now.toISOString(),
+    device: str(device, 30) || undefined,
     book: clone(book),
     opts: clone(opts),
     covers: { book: covers.book ?? null, deck: covers.deck ?? null },
@@ -97,6 +115,7 @@ export function readBackup(raw) {
     opts,
     covers,
     createdAt: Number.isFinite(Date.parse(raw.createdAt)) ? new Date(raw.createdAt).toISOString() : null,
+    device: str(raw.device, 30) || null,
     counts: { palettes: Object.keys(book.palettes).length, tabs: book.sections.length, covers: LAYOUTS.filter((l) => covers[l]).length },
   };
 }
@@ -105,19 +124,30 @@ const signature = (p) => `${p.name.toLowerCase()}|${p.colors.map((c) => c.hex).j
 
 /**
  * Add the palettes of `incoming` to `current` (in place), skipping any that are already there
- * (same id, or the same name and colors). Tabs with the same name are shared; a tab is only
- * created when it has something to add.
- * @returns {{ added: number, skipped: number, tabsAdded: number }}
+ * (same id, or the same name and colors). Nothing already in `current` is changed or removed.
+ * With `into` (e.g. "From iPad") every new palette goes into that one tab, made when needed and
+ * reused next time; otherwise tabs with the same name are shared. A tab is only created when it
+ * has something to add.
+ * @returns {{ added: number, skipped: number, tabsAdded: number, tab: string|null }}
  */
-export function mergeBooks(current, incoming) {
-  const result = { added: 0, skipped: 0, tabsAdded: 0 };
+export function mergeBooks(current, incoming, { into = '' } = {}) {
+  const result = { added: 0, skipped: 0, tabsAdded: 0, tab: null };
   const have = new Set(Object.values(current.palettes).map(signature));
+  const named = (name) => current.sections.find((x) => x.name.toLowerCase() === name.toLowerCase());
   for (const s of incoming.sections) {
-    let target = current.sections.find((x) => x.name.toLowerCase() === s.name.toLowerCase());
+    const name = into || s.name;
+    let target = named(name);
+    if (into) result.tab = name;
     for (const id of s.ids) {
       const p = incoming.palettes[id];
       if (current.palettes[id] || have.has(signature(p))) { result.skipped++; continue; }
-      if (!target) { target = addSection(current, s.name, s.color); result.tabsAdded++; }
+      if (!target) {
+        // a "From …" tab takes a tab color the book is not using yet, where it can
+        const used = new Set(current.sections.map((x) => x.color));
+        const color = into ? TAB_COLORS.find((c) => !used.has(c)) ?? s.color : s.color;
+        target = addSection(current, name, color);
+        result.tabsAdded++;
+      }
       current.palettes[id] = { ...p };
       target.ids.push(id);
       have.add(signature(p));

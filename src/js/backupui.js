@@ -7,7 +7,7 @@ import {
 } from './store.js';
 import { paletteCount } from './book.js';
 import {
-  makeBackup, readBackup, mergeBooks, backupFileName, parseBackupText,
+  makeBackup, readBackup, mergeBooks, backupFileName, parseBackupText, deviceName,
 } from './backupcore.js';
 import { buildFlipbookHtml } from './backuphtml.js';
 import {
@@ -20,7 +20,9 @@ import { openDialog, toast, esc } from './ui.js';
 import { APP_NAME } from './meta.js';
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
-const snapshot = () => makeBackup({ book, opts: getBookOpts(), covers: { book: coverImage('book'), deck: coverImage('deck') } });
+const snapshot = () => makeBackup({ book, opts: getBookOpts(), covers: { book: coverImage('book'), deck: coverImage('deck') }, device: deviceName(navigator) });
+/** The tab a merged backup's new palettes go into, e.g. "From iPad". */
+const fromTab = (r) => `From ${r.device ?? 'a backup'}`;
 const longDate = (iso) => (iso ? new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'never');
 const tick = () => new Promise((r) => setTimeout(r, 0)); // let the browser breathe during long jobs
 
@@ -133,7 +135,7 @@ export function openBackup() {
         <button type="button" class="btn btn-glass" data-do="json">Save data file (.json)</button>
       </section>
       <section class="dlg-section"><h3>Using more than one device?</h3>
-        <p class="dlg-note">Save a backup to a cloud drive (on iPhone and iPad: <b>Save to Files</b>, then <b>iCloud Drive</b>). On your other device, open Color Palette PRO, choose <button type="button" class="link-btn" data-do="restore">Restore from a backup</button>, pick that file and choose <b>Add to my swatch book</b>. That device keeps everything it already has and adds the palettes it was missing. (To bring changes back the other way, do the same in reverse.)</p>
+        <p class="dlg-note">Save a backup to a cloud drive (on iPhone and iPad: <b>Save to Files</b>, then <b>iCloud Drive</b>). On your other device, open Color Palette PRO, choose <button type="button" class="link-btn" data-do="restore">Restore from a backup</button>, pick that file and choose <b>Add the new palettes</b>. That device keeps its swatch book exactly as it is, and the palettes it was missing arrive in a tab named after the device they came from, like <b>From iPad</b>. (To bring palettes back the other way, do the same in reverse.)</p>
       </section>
       <p class="dlg-note">Last backup: <b>${esc(longDate(prefs.lastBackup))}</b>${prefs.lastBackup && prefs.changesSinceBackup ? ` · ${prefs.changesSinceBackup} change${prefs.changesSinceBackup === 1 ? '' : 's'} since` : ''}.</p>
     </div>`,
@@ -181,11 +183,13 @@ function chooseRestore({ r, have }) {
       cls: 'ask',
       html: `<p class="muted">Backup from <b>${esc(longDate(r.createdAt))}</b>: ${esc(bits.join(', '))}.${have ? ` Your swatch book has ${have} palette${have === 1 ? '' : 's'} right now.` : ''}</p>
         <div class="ask-actions ask-stack">
-          <button type="button" class="btn btn-primary" data-pick="replace">${have ? 'Replace my swatch book' : 'Restore'}</button>
-          ${have ? '<button type="button" class="btn btn-glass" data-pick="merge">Add to my swatch book</button>' : ''}
+          ${have
+            ? `<button type="button" class="btn btn-primary" data-pick="merge">Add the new palettes</button>
+               <button type="button" class="btn btn-glass" data-pick="replace">Replace my swatch book instead</button>`
+            : '<button type="button" class="btn btn-primary" data-pick="replace">Restore</button>'}
           <button type="button" class="btn btn-glass" data-pick="">Cancel</button>
         </div>
-        ${have ? '<p class="dlg-note">Replace swaps in the backup’s palettes, tabs, look and covers (you can undo right after). Add keeps what you have and adds the palettes you do not already have.</p>' : ''}`,
+        ${have ? `<p class="dlg-note"><b>Add</b> keeps everything in your swatch book as it is and puts the palettes you don’t have yet in a tab called <b>${esc(fromTab(r))}</b>. <b>Replace</b> swaps in the backup’s palettes, tabs, look and covers instead (you can undo right after); it’s meant for setting up a new device.</p>` : ''}`,
       onClose: () => resolve(dlg.picked || null),
     });
     dlg.addEventListener('click', (e) => {
@@ -213,10 +217,10 @@ export async function restoreFromData(raw) {
   if (!choice) return;
 
   if (choice === 'merge') {
-    const res = mergeBooks(book, r.book);
+    const res = mergeBooks(book, r.book, { into: fromTab(r) });
     persistBook();
     toast(res.added
-      ? `Added ${res.added} palette${res.added === 1 ? '' : 's'}${res.skipped ? ` (${res.skipped} already here)` : ''} ★`
+      ? `Added ${res.added} new palette${res.added === 1 ? '' : 's'} to “${res.tab}”${res.skipped ? ` (${res.skipped} already here)` : ''} ★`
       : 'Everything in that backup is already in your swatch book.');
     return;
   }

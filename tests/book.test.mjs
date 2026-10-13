@@ -9,7 +9,7 @@ import {
 } from '../src/js/bookpages.js';
 import { coverScene, isCoverDataUrl } from '../src/js/cover.js';
 import {
-  makeBackup, readBackup, mergeBooks, backupFileName, toScriptJson, parseBackupText, BACKUP_TYPE,
+  makeBackup, readBackup, mergeBooks, backupFileName, toScriptJson, parseBackupText, BACKUP_TYPE, deviceName,
 } from '../src/js/backupcore.js';
 import { buildFlipbookHtml } from '../src/js/backuphtml.js';
 import { backupFromHtml } from '../src/js/importers.js';
@@ -345,6 +345,42 @@ test('a palette with the same id counts as the same palette, even if it was edit
   assert.equal(res.added, 0);
   assert.equal(res.skipped, 1);
   assert.equal(mine.palettes.p1.name, 'Palette 1', 'what you have now is kept');
+});
+
+test('bringing in a backup from another device adds only new palettes, in a "From …" tab, and changes nothing else', () => {
+  const mine = makeBook(5, ['Blues']);
+  const snapshotOfMine = JSON.stringify(mine);
+  const theirs = makeBook(8, ['blues', 'Pinks']);
+  const r = readBackup(makeBackup({ book: theirs, opts: defaultOpts(), device: 'iPad' }));
+  assert.equal(r.device, 'iPad');
+  const res = mergeBooks(mine, r.book, { into: 'From iPad' });
+  assert.equal(res.added, 3);
+  assert.equal(res.tab, 'From iPad');
+  const from = mine.sections.find((s) => s.name === 'From iPad');
+  assert.equal(from.ids.length, 3, 'all the new palettes are together in one tab');
+  const old = JSON.parse(snapshotOfMine);
+  assert.deepEqual(mine.sections.find((s) => s.name === 'Blues').ids, old.sections.find((s) => s.name === 'Blues').ids, 'existing tabs are untouched');
+  for (const [id, p] of Object.entries(old.palettes)) assert.deepEqual(mine.palettes[id], p, 'existing palettes are untouched');
+  assert.ok(!mine.sections.some((s) => s.name === 'Pinks'), 'their tab names are not copied in');
+  // next time, the same tab is reused
+  theirs.palettes.p9 = { ...theirs.palettes.p8, id: 'p9', name: 'Palette 9', colors: [{ hex: '#123456', name: 'Ink' }] };
+  theirs.sections[1].ids.push('p9');
+  const again = mergeBooks(mine, theirs, { into: 'From iPad' });
+  assert.equal(again.added, 1);
+  assert.equal(again.tabsAdded, 0);
+  assert.equal(mine.sections.filter((s) => s.name === 'From iPad').length, 1);
+});
+
+test('backups know which kind of device made them (and nothing more)', () => {
+  const ipad = { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/18.0 Safari/605.1.15', maxTouchPoints: 5 };
+  assert.equal(deviceName(ipad), 'iPad');
+  assert.equal(deviceName({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', maxTouchPoints: 0 }), 'Mac');
+  assert.equal(deviceName({ userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)' }), 'iPhone');
+  assert.equal(deviceName({ userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }), 'PC');
+  assert.equal(deviceName({ userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) Mobile' }), 'Android phone');
+  assert.equal(deviceName({ userAgent: 'Mozilla/5.0 (Linux; Android 14; SM-X710)' }), 'Android tablet');
+  assert.equal(deviceName({}), 'another device');
+  assert.equal(readBackup(makeBackup({ book: makeBook(1), opts: defaultOpts() })).device, null, 'older backups have no device');
 });
 
 test('backup file names are tidy and dated', () => {
