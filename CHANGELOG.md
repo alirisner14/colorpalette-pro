@@ -6,7 +6,11 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Changed (on the soulful-palettes branch, for review)
+Nothing yet.
+
+## [1.2.0] — 2026-10-13
+
+### Changed
 - **Palettes modelled on loved, hand-made palettes** (see docs/PALETTE-RESEARCH.md): a value structure first, 1–3 hue families, lights warmer and darks cooler, color richest in the light mid-tones, mostly soft with an occasional accent, neutrals from none to half, usually ordered light to dark.
 - Replaces 1.1.0's forced extremes and a wildcard in every palette, which measured as the opposite of what people love.
 - **Your color** stays exact in the first two palettes and a palette's first two shuffles; elsewhere it may drift slightly to sit better.
