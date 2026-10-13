@@ -25,6 +25,7 @@
 - [ ] Test the cut files on more cutting machines (Cricut, Silhouette, Brother) and adjust
 
 ## Ideas that set it apart
+- [ ] **Private sync code** (planned, after launch): turn on sync to get a code or QR; scan it on another device and they stay in step. Palettes are encrypted on the device with that code, so the server only stores data it cannot read. No accounts, emails or passwords. Needs a small server (Supabase or similar, set up once there are users, since free projects pause when idle) and updates to the Privacy Policy, Terms, Settings and "Delete all my data". Accounts (email and password) are the fallback if people ask for them.
 - [ ] **Live environments** (to discuss): see a palette applied to realistic mockups, like Coolors does (websites, app screens, posters, branding, patterns, illustrations, interiors, typography), building on Palette in context.
 - [ ] **Thumbs up / neutral / down on palettes** to learn what you like (idea, not decided). Each rating would note a
   palette's character (how light, how colorful, how many neutrals, warm or cool, how many wildcards, which backbone), and new

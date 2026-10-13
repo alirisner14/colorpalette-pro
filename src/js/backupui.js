@@ -15,7 +15,7 @@ import {
 } from './bookpages.js';
 import { coverImage, setCoverImageData, clearCoverImage } from './cover.js';
 import { toSvg } from './scene.js';
-import { downloadBlob } from './export.js';
+import { deliver } from './export.js';
 import { openDialog, toast, esc } from './ui.js';
 import { APP_NAME } from './meta.js';
 
@@ -47,7 +47,19 @@ async function fontData() {
 }
 
 function markBackedUp() {
-  persistPrefs({ lastBackup: new Date().toISOString() });
+  persistPrefs({ lastBackup: new Date().toISOString(), changesSinceBackup: 0 });
+}
+
+/**
+ * Hand a backup over: the share sheet on phones and tablets (so it can go straight to iCloud Drive,
+ * Google Drive or another device), a download elsewhere. Returns false if you cancelled.
+ */
+async function handOver(blob, filename, saved) {
+  const how = await deliver({ blob, filename });
+  if (how === 'cancelled') return false;
+  markBackedUp();
+  toast(how === 'shared' ? 'Backup ready. Saved where you chose ✨' : saved);
+  return true;
 }
 
 /** Save the swatch book as a flipbook page (the book, or the deck if that is what you are using). */
@@ -95,17 +107,13 @@ export async function backupHtml() {
     title: layout === 'book' ? 'My Swatch Book' : 'My Swatch Deck',
     subtitle: APP_NAME,
   });
-  downloadBlob(new Blob([html], { type: 'text/html' }), `${backupFileName()}.html`);
-  markBackedUp();
-  toast('Saved your flipbook backup. Keep it somewhere safe ✨');
+  await handOver(new Blob([html], { type: 'text/html' }), `${backupFileName()}.html`, 'Saved your flipbook backup. Keep it somewhere safe ✨');
 }
 
 /** Save the swatch book as a small data file made for restoring. */
 export async function backupJson() {
   const text = JSON.stringify(snapshot());
-  downloadBlob(new Blob([text], { type: 'application/json' }), `${backupFileName()}.json`);
-  markBackedUp();
-  toast('Saved your data backup. Keep it somewhere safe ✨');
+  await handOver(new Blob([text], { type: 'application/json' }), `${backupFileName()}.json`, 'Saved your data backup. Keep it somewhere safe ✨');
 }
 
 /** The "Back up" dialog. */
@@ -124,7 +132,10 @@ export function openBackup() {
         <p class="dlg-note">A small file made just for restoring: your palettes, tabs, look and covers.</p>
         <button type="button" class="btn btn-glass" data-do="json">Save data file (.json)</button>
       </section>
-      <p class="dlg-note">Last backup: <b>${esc(longDate(prefs.lastBackup))}</b>. To bring a backup back, use <button type="button" class="link-btn" data-do="restore">Restore from a backup</button>.</p>
+      <section class="dlg-section"><h3>Using more than one device?</h3>
+        <p class="dlg-note">Save a backup to a cloud drive (on iPhone and iPad: <b>Save to Files</b>, then <b>iCloud Drive</b>). On your other device, open Color Palette PRO, choose <button type="button" class="link-btn" data-do="restore">Restore from a backup</button>, pick that file and choose <b>Add to my swatch book</b>. That device keeps everything it already has and adds the palettes it was missing. (To bring changes back the other way, do the same in reverse.)</p>
+      </section>
+      <p class="dlg-note">Last backup: <b>${esc(longDate(prefs.lastBackup))}</b>${prefs.lastBackup && prefs.changesSinceBackup ? ` · ${prefs.changesSinceBackup} change${prefs.changesSinceBackup === 1 ? '' : 's'} since` : ''}.</p>
     </div>`,
   });
   dlg.addEventListener('click', async (e) => {

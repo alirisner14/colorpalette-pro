@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Color Palette PRO** — On the Rise Digital
-Last updated 04 October 2026
+Last updated 13 October 2026
 
 > This must be reachable at a public URL before you can sell through the
 > Apple App Store or Google Play, and it is the document buyers look for
@@ -39,7 +39,7 @@ anywhere.
 | What | Where | Why |
 |---|---|---|
 | Your swatch book: saved palettes, tabs and how the book or deck looks | local storage | so your collection is there next time |
-| Your settings: last color, style, number of colors, filters, theme, print choices, date of your last backup | local storage | so the app opens the way you left it |
+| Your settings: last color, style, number of colors, the harmony you lean toward, theme, print choices, date of your last backup and how many changes you have made since | local storage | so the app opens the way you left it and can remind you to back up |
 | The palette you are building | local storage | so a half-made palette is not lost |
 | Cover pictures you choose for the swatch book or deck, shrunk to a small size | IndexedDB | so your cover is there next time |
 | A copy of the app's own files, including its fonts and these documents | Cache Storage | so it works offline |

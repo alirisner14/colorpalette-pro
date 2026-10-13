@@ -16,6 +16,8 @@ export function emit(evt, data) { (listeners[evt] || []).forEach((fn) => fn(data
 
 let warned = false;
 export function persistBook() {
+  prefs.changesSinceBackup = (prefs.changesSinceBackup ?? 0) + 1; // for the backup reminder
+  savePrefs(prefs);
   if (!saveBook(book) && !warned) {
     warned = true;
     toast('Heads up: this browser is blocking storage, so your swatch book will reset when you leave.');

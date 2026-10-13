@@ -580,9 +580,12 @@ function maybeNudge() {
   const DAY = 864e5;
   const last = prefs.lastBackup ? Date.parse(prefs.lastBackup) : 0;
   const snooze = prefs.backupSnooze ? Date.parse(prefs.backupSnooze) : 0;
-  if (paletteCount(book) < 3 || Date.now() - last < 30 * DAY || Date.now() < snooze) return;
+  const changes = prefs.changesSinceBackup ?? 0;
+  // remind after several saved changes and a week, or any change and a month (never more than once a fortnight)
+  const due = (!last && paletteCount(book) >= 3) || (changes >= 8 && Date.now() - last > 7 * DAY) || (changes >= 1 && Date.now() - last > 30 * DAY);
+  if (paletteCount(book) < 3 || !due || Date.now() < snooze) return;
   persistPrefs({ backupSnooze: new Date(Date.now() + 14 * DAY).toISOString() });
-  setTimeout(() => toast(last ? 'It has been a while since your last backup.' : 'Tip: back up your swatch book so it stays safe.', {
+  setTimeout(() => toast(last ? `You've made ${changes} change${changes === 1 ? '' : 's'} since your last backup.` : 'Tip: back up your swatch book so it stays safe.', {
     action: 'Back up', onAction: async () => (await import('./backupui.js')).openBackup(),
   }), 900);
 }

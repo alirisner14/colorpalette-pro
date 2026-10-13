@@ -8,6 +8,14 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 Nothing yet.
 
+## [1.2.1] — 2026-10-13
+
+### Changed
+- **Backups on iPhone and iPad open the share sheet**, so you can choose **Save to Files → iCloud Drive** (or AirDrop) instead of hunting in Downloads. Computers still download the file.
+- **The backup reminder** now appears after real changes (8 or more saved changes and a week, or any change and a month), and says how many changes are waiting. The backup window shows the count too.
+- **Using more than one device?** The backup window explains how to bring your swatch book to another device (back up to a cloud drive, then Restore and **Add to my swatch book** there).
+- Privacy Policy: the stored settings now mention the change count used by the reminder.
+
 ## [1.2.0] — 2026-10-13
 
 ### Changed
