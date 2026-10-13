@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { encodeAse, encodeAco, encodeGpl, encodeSketch, encodePaintNet, encodeCss, encodeSvg, encodeJson, encodeProcreate, FORMATS } from '../src/js/formats.js';
 import { kmeans, extractPhotoColors, samplePixels } from '../src/js/photo.js';
 import { THEMES, generateThemeColors } from '../src/js/themes.js';
+import { colorfulSimilarity } from '../src/js/harmonies.js';
+import { hexToOklch, deltaE } from '../src/js/color.js';
 import {
   emptyBook, normalizeBook, addPalette, removePalette, movePalette, addSection, deleteSection, moveSection,
   autoSortByColor, paginate, sectionOf, renameSection,
@@ -107,15 +109,26 @@ test('photo extraction copes with a one-color image', () => {
   assert.ok(colors.length >= 1 && colors.length <= 8);
 });
 
-test('themes produce N distinct colors', () => {
+test('themes produce N distinct colors, and pastels stay pastel', () => {
   for (const t of THEMES) {
-    for (const flavor of [0, 1, 2]) {
-      const colors = generateThemeColors(t.id, 10, 42, flavor);
-      assert.equal(colors.length, 10, `${t.id}/${flavor}`);
-      assert.equal(new Set(colors).size, 10);
+    for (const seed of [42, 7, 1234]) {
+      const colors = generateThemeColors(t.id, 10, seed);
+      assert.equal(colors.length, 10, `${t.id}/${seed}`);
+      assert.equal(new Set(colors).size, 10, `${t.id}/${seed}: ${colors.join(' ')}`);
     }
   }
-  generateThemeColors('pastel', 8, 5, 0).forEach((hex) => assert.ok(hexToHsl(hex).l > 0.75, `${hex} is pastel`));
+  // all pastel except one dark color for text (charcoal, brown or a jewel tone)
+  for (const seed of [5, 6, 7]) generateThemeColors('pastel', 8, seed).sort((x, y) => hexToOklch(y).l - hexToOklch(x).l).slice(0, -1).forEach((hex) => assert.ok(hexToOklch(hex).l > 0.76, `${hex} is pastel`)); // perceived lightness
+});
+
+test('shuffling a theme gives really different palettes, not the same set again', () => {
+  for (const t of THEMES) {
+    let same = 0;
+    // perceived twins (OKLab distance under 0.03), so pale tints aren't all lumped together
+    const twins = (x, y) => x.filter((c) => y.some((d) => deltaE(c, d) < 0.03)).length / x.length;
+    for (let s = 1; s <= 10; s++) if (twins(generateThemeColors(t.id, 8, s), generateThemeColors(t.id, 8, s + 100)) >= 0.5) same++;
+    assert.ok(same <= 3, `${t.id}: ${same} of 10 shuffles looked like the last`);
+  }
 });
 
 test('book: add, move within and across tabs, remove', () => {

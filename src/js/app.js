@@ -1,6 +1,6 @@
 import { normalizeHex, readableText, hslToHex, hexToHsl, rgbString, rgbToHex, parseColorCodes, wrapHue, hexToOklch, oklchToHex, GOLDEN_ANGLE } from './color.js';
 import {
-  FOUNDATIONS, MIN_COLORS, MAX_COLORS, AUTO_PALETTES, generateBatch, generateDistinct, pickDistinct, paletteLikeness, swapOptions, foundationPlan,
+  FOUNDATIONS, MIN_COLORS, MAX_COLORS, AUTO_PALETTES, generateBatch, generateDistinct, pickDistinct, paletteLikeness, colorfulSimilarity, swapOptions, foundationPlan, EXACT_FIRST,
 } from './harmonies.js';
 import { nameColor, nameColors, namePalette } from './names.js';
 import { SHAPES, getShape } from './shapes.js';
@@ -124,8 +124,8 @@ function generateFresh({ stable = false, live = false, avoid = [] } = {}) {
     const n = state.total || 9;
     const seen = [...avoid];
     state.palettes = Array.from({ length: n }, (_, i) => {
-      const make = (k) => generateThemeColors(state.themeId, state.count, seedFor(i) + 13 + k * 104729, (i + k) % 3);
-      const hexes = live ? make(0) : pickDistinct(make, seen, { limit: 0.6, tries: 10, measure: paletteLikeness });
+      const make = (k) => generateThemeColors(state.themeId, state.count, seedFor(i) + 13 + k * 104729);
+      const hexes = live ? make(0) : pickDistinct(make, seen, { limit: 0.55, tries: 10, measure: (a, b) => Math.max(paletteLikeness(a, b), colorfulSimilarity(a, b) * 1.1) });
       seen.push(hexes);
       return makePalette(`theme:${state.themeId}`, hexes, taken, { source: 'theme' });
     });
@@ -360,7 +360,7 @@ function shufflePalette(id) {
   let hexes;
   const before = [old.colors.map((c) => c.hex)]; // the new palette must not be a copy of this one
   if (old.harmony.startsWith('theme:')) {
-    hexes = pickDistinct((k) => generateThemeColors(state.themeId, state.count, randSeed(), (i + k) % 3), before);
+    hexes = pickDistinct(() => generateThemeColors(state.themeId, state.count, randSeed()), before, { limit: 0.55, tries: 10, measure: (a, b) => Math.max(paletteLikeness(a, b), colorfulSimilarity(a, b) * 1.1) });
   } else if (old.harmony === 'photo-pure') {
     hexes = pickDistinct(() => extractPhotoColors(state.photo.pixels, state.count, randSeed()), before, { limit: 0.75 });
   } else if (old.harmony === 'mood') {
@@ -368,8 +368,13 @@ function shufflePalette(id) {
       const res = moodPalettes(old.moodText, { count: state.count, variants: 9, seed: randSeed() });
       return (res.palettes.find((m) => m.variant === old.variant) ?? res.palettes[0]).hexes;
     }, before);
-  } else hexes = generateDistinct(old.base, old.foundation ?? old.harmony, state.count, randSeed(), before);
-  const fresh = makePalette(old.harmony, hexes, taken, { base: old.base, source: old.source, foundation: old.foundation, moodText: old.moodText, variant: old.variant });
+  } else {
+    // your exact color stays in the top palettes and the first couple of shuffles; after that it may drift a little
+    const shuffles = (old.shuffles ?? 0) + 1;
+    const exact = i < EXACT_FIRST || shuffles <= EXACT_FIRST;
+    hexes = generateDistinct(old.base, old.foundation ?? old.harmony, state.count, randSeed(), before, undefined, { exact });
+  }
+  const fresh = makePalette(old.harmony, hexes, taken, { base: old.base, source: old.source, foundation: old.foundation, moodText: old.moodText, variant: old.variant, shuffles: (old.shuffles ?? 0) + 1 });
   if (old.harmony === 'mood') fresh.name = old.name;
   if (hasLocks(old)) fresh.colors = mergeLocked(old.colors, hexes, state.count);
   state.palettes[i] = fresh;

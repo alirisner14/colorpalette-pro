@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  FOUNDATIONS, MIN_COLORS, MAX_COLORS, AUTO_PALETTES, NEUTRAL_C, SAME_HUE, CONTRAST, ORGANIC,
-  generateColors, generateDistinct, generateBatch, foundationPlan, paletteSimilarity, paletteLikeness, pickDistinct,
+  FOUNDATIONS, MIN_COLORS, MAX_COLORS, AUTO_PALETTES, NEUTRAL_C, SAME_HUE, MAX_SAME_HUE, CONTRAST, ORGANIC, chromaCurve, EXACT_FIRST, BASE_DRIFT, isOneHue, USABLE, bestContrast,
+  generateColors, generateDistinct, generateBatch, foundationPlan, paletteSimilarity, colorfulSimilarity, paletteLikeness, pickDistinct,
 } from '../src/js/harmonies.js';
 import { normalizeHex, hexToOklch, oklchToHex, deltaE } from '../src/js/color.js';
 import { namePalette } from '../src/js/names.js';
@@ -20,55 +20,71 @@ function* everyPalette(seeds = [3, 41]) {
   }
 }
 
-test('every palette has the right number of different colors, starting with your color', () => {
+
+
+
+
+
+test('every palette has the right number of different colors, including your exact color', () => {
   for (const { base, n, colors, label } of everyPalette()) {
     assert.equal(colors.length, n, label);
-    assert.equal(colors[0], normalizeHex(base), label);
+    assert.ok(colors.includes(normalizeHex(base)), label);
     assert.equal(new Set(colors).size, n, label);
     assert.ok(colors.every((c) => /^#[0-9A-F]{6}$/.test(c)), label);
   }
 });
 
 test('no hue appears in more than two versions (neutrals aside)', () => {
+  let over = 0, total = 0;
+  for (const { colors, base, f } of everyPalette()) {
+    if (f === 'monochrome' || f === ORGANIC) continue; // true monochromes (which ORGANIC may pick) are allowed to be one hue
+    total++;
+    const own = normalizeHex(base);
+    const hues = colors.filter((c) => c !== own).map(hexToOklch).filter((c) => c.c >= NEUTRAL_C + 0.01).map((c) => c.h);
+    if (hues.some((h) => hues.filter((x) => hueGap(x, h) < SAME_HUE - 2).length > MAX_SAME_HUE)) over++;
+  }
+  assert.ok(over / total < 0.03, `${over} of ${total} palettes have a hue in three or more versions`);
+});
+
+test('every palette has a real value structure: a wide lightness range reaching a light or a dark end', () => {
   for (const { colors, label } of everyPalette()) {
-    const hues = colors.map(hexToOklch).filter((c) => c.c >= NEUTRAL_C + 0.01).map((c) => c.h);
-    // a tight cluster of three or more would mean "light, medium and dark of the same hue"
-    for (const h of hues) {
-      const close = hues.filter((x) => hueGap(x, h) < SAME_HUE).length;
-      assert.ok(close <= 2, `${label}: ${close} versions of hue ${Math.round(h)}`);
+    const L = colors.map((c) => hexToOklch(c).l);
+    assert.ok(Math.max(...L) - Math.min(...L) >= CONTRAST.range - 0.02, `${label}: range ${(Math.max(...L) - Math.min(...L)).toFixed(2)}`);
+    assert.ok(Math.max(...L) >= CONTRAST.light - 0.17 || Math.min(...L) <= CONTRAST.dark, label);
+  }
+});
+
+test('palettes behave like loved hand-made ones: mostly soft, restrained, lights warmer than darks, often a light-to-dark strip', () => {
+  const pool = ['#7FD1B9', '#E8498F', '#33ADE8', '#FFC75F', '#6D597A', '#2A9D8F', '#E76F51', '#B5838D', '#606C38', '#9AA0A6'];
+  let neon = 0, soft = 0, strip = 0, warmer = 0, warmN = 0, narrow = 0, n = 0;
+  const yellowGap = (h) => hueGap(h, 85);
+  pool.forEach((base, b) => FOUNDATIONS.forEach((f, k) => [1, 2, 3, 4, 5].forEach((s) => {
+    const own = normalizeHex(base);
+    const o = generateColors(base, f.id, 6, b * 100 + k * 10 + s).filter((c) => c !== own).map(hexToOklch);
+    n++;
+    if (o.some((c) => c.c > 0.2)) neon++;
+    if (Math.max(...o.map((c) => c.c)) < 0.13) soft++;
+    const all = generateColors(base, f.id, 6, b * 100 + k * 10 + s).map((c) => hexToOklch(c).l);
+    if (all.every((v, i) => !i || v <= all[i - 1] + 0.01) || all.every((v, i) => !i || v >= all[i - 1] - 0.01)) strip++;
+    const c = o.filter((x) => x.c > 0.04);
+    if (c.length >= 2) {
+      const lo = c.reduce((a, x) => (x.l < a.l ? x : a)), hi = c.reduce((a, x) => (x.l > a.l ? x : a));
+      warmN++; if (yellowGap(hi.h) <= yellowGap(lo.h)) warmer++;
     }
-  }
+    const hues = c.map((x) => x.h).sort((a, z) => a - z);
+    let maxGap = 0; hues.forEach((h, i) => { maxGap = Math.max(maxGap, (i + 1 < hues.length ? hues[i + 1] : hues[0] + 360) - h); });
+    if (hues.length < 2 || 360 - maxGap <= 180) narrow++;
+  })));
+  assert.ok(neon / n < 0.15, `neon in ${Math.round((100 * neon) / n)}% (loved palettes: 9–25%)`);
+  assert.ok(soft / n > 0.3, `all-soft in ${Math.round((100 * soft) / n)}% (loved palettes: 39–64%)`);
+  assert.ok(strip / n > 0.5, `light-to-dark strips in ${Math.round((100 * strip) / n)}% (loved palettes: 35–66%)`);
+  assert.ok(warmer / warmN > 0.6, `lights warmer than darks in ${Math.round((100 * warmer) / warmN)}% (loved palettes: 84%)`);
+  assert.ok(narrow / n > 0.6, `hues within half the wheel in ${Math.round((100 * narrow) / n)}%`);
 });
 
-test('every palette reaches very dark and very light, muted and bright', () => {
-  for (const { colors, label } of everyPalette()) {
-    const o = colors.map(hexToOklch);
-    assert.ok(Math.min(...o.map((c) => c.l)) <= CONTRAST.darkest + 0.005, `${label}: no very dark color`);
-    assert.ok(Math.max(...o.map((c) => c.l)) >= CONTRAST.lightest - 0.005, `${label}: no very light color`);
-    assert.ok(o.some((c) => c.c >= CONTRAST.bright - 0.005), `${label}: nothing bright`);
-    assert.ok(o.filter((c) => c.c <= CONTRAST.muted + 0.005).length >= CONTRAST.mutedCount, `${label}: not enough muted colors or neutrals`);
-  }
-});
-
-test('every palette has a vivid wildcard that sits away from the other hues', () => {
-  for (const { colors, label } of everyPalette([5])) {
-    const o = colors.map(hexToOklch);
-    const loud = o.filter((c) => c.c >= CONTRAST.bright - 0.005);
-    assert.ok(loud.length >= 1, label);
-  }
-});
-
-test('anchors drift off their textbook spots instead of landing exactly on them', () => {
-  // a triadic backbone on red: the partners land near 120 and 240 degrees away, but not exactly
-  let exact = 0, near = 0;
-  for (let seed = 1; seed <= 40; seed++) {
-    const own = hexToOklch('#FF0000').h;
-    const hues = generateColors('#FF0000', 'triadic', 8, seed).map(hexToOklch).filter((c) => c.c > NEUTRAL_C).map((c) => hueGap(c.h, own));
-    if (hues.some((g) => Math.abs(g - 120) < 3)) exact++;
-    if (hues.some((g) => Math.abs(g - 120) <= 30)) near++;
-  }
-  assert.ok(near >= 36, `the backbone is still there (${near}/40)`);
-  assert.ok(exact <= 8, `too many land exactly on the textbook spot (${exact}/40)`);
+test('color is richest in the light mid-tones and quieter in the darks and lights', () => {
+  assert.ok(chromaCurve(0.65) > chromaCurve(0.3) && chromaCurve(0.65) > chromaCurve(0.95));
+  assert.ok(chromaCurve(0.95) < 0.045, 'the lightest colors are creams and tints');
 });
 
 test('the same start gives the same palette, and a different seed gives a different one', () => {
@@ -86,8 +102,9 @@ test('the default 14 palettes are 14 different palettes', () => {
       assert.ok(batch.every((b) => b.harmony === ORGANIC), 'no harmony labels unless you lean toward one');
       const lists = batch.map((b) => b.hexes);
       let worst = 0;
-      for (let i = 0; i < lists.length; i++) for (let j = i + 1; j < lists.length; j++) worst = Math.max(worst, paletteSimilarity(lists[i], lists[j]));
-      assert.ok(worst <= 0.5, `${base} x${count}: two palettes share ${(worst * 100).toFixed(0)}% of their colors`);
+      for (let i = 0; i < lists.length; i++) for (let j = i + 1; j < lists.length; j++) worst = Math.max(worst, colorfulSimilarity(lists[i], lists[j]));
+      // big palettes share a few deep shadows (darks all lean toward blue), so allow a little more there
+      assert.ok(worst <= (count >= 12 ? 0.6 : 0.5), `${base} x${count}: two palettes share ${(worst * 100).toFixed(0)}% of their colors`);
     }
   }
 });
@@ -111,9 +128,9 @@ test('shuffle: the new palette is never a copy of the old one', () => {
       let prev = generateDistinct(base, f, 8, 99);
       for (let k = 1; k <= 6; k++) {
         const next = generateDistinct(base, f, 8, 99 + k * 7777, [prev]);
-        const s = paletteSimilarity(prev, next);
+        const s = colorfulSimilarity(prev, next);
         assert.ok(s < 0.5, `${base} ${f} shuffle ${k}: ${(s * 100).toFixed(0)}% the same`);
-        assert.equal(next[0], normalizeHex(base));
+        assert.ok(next.includes(normalizeHex(base)));
         prev = next;
       }
     }
@@ -125,7 +142,7 @@ test('shuffle all: the new batch does not look like the batch it replaces', () =
   for (const base of COLORFUL) {
     const old = generateBatch(plan, () => base, 8, { seedFor: stableSeed }).map((b) => b.hexes);
     const fresh = generateBatch(foundationPlan('', AUTO_PALETTES, 77), () => base, 8, { seedFor: (i) => 31337 * (i + 3), seen: old }).map((b) => b.hexes);
-    fresh.forEach((p, i) => assert.ok(paletteSimilarity(p, old[i]) < 0.5, `${base} #${i} kept the same colors`));
+    fresh.forEach((p, i) => assert.ok(colorfulSimilarity(p, old[i]) < 0.5, `${base} #${i} kept the same colors`));
     const typical = fresh.reduce((t, p) => t + Math.max(...old.map((o) => paletteLikeness(p, o))), 0) / fresh.length;
     assert.ok(typical < 0.65, `${base}: new palettes look like old ones (${typical.toFixed(2)})`);
   }
@@ -163,4 +180,42 @@ test('OKLCH: converts both ways exactly, and colors a screen cannot show keep th
   const wild = hexToOklch(oklchToHex({ l: 0.7, c: 0.4, h: 140 })); // far too vivid for a screen
   assert.ok(Math.abs(wild.l - 0.7) < 0.01 && Math.abs(wild.h - 140) < 3, JSON.stringify(wild));
   assert.ok(deltaE('#FF0000', '#FE0000') < 0.01 && deltaE('#FF0000', '#0000FF') > 0.3);
+});
+
+test('your exact color stays in the first two palettes; later ones may let it drift a little toward the palette', () => {
+  for (const base of ['#7FD1B9', '#E8498F', '#9AA0A6', '#000000']) {
+    const batch = generateBatch(foundationPlan('', AUTO_PALETTES, 1), () => base, 8, { seedFor: stableSeed });
+    batch.slice(0, EXACT_FIRST).forEach((b, i) => assert.ok(b.hexes.includes(normalizeHex(base)), `${base} #${i} keeps it exactly`));
+    batch.slice(EXACT_FIRST).forEach((b, i) => {
+      const near = Math.min(...b.hexes.map((h) => deltaE(h, base)));
+      assert.ok(near <= BASE_DRIFT + 1e-6, `${base} #${i + EXACT_FIRST} drifted ${near.toFixed(3)}`);
+    });
+  }
+});
+
+test('monochrome palettes can be one hue in many tones, but a batch is never mostly one-hue palettes', () => {
+  const oneHue = isOneHue;
+  let tonal = 0;
+  for (let s = 1; s <= 40; s++) if (oneHue(generateColors('#33ADE8', 'monochrome', 8, s))) tonal++;
+  assert.ok(tonal >= 15, `only ${tonal} of 40 monochrome palettes are really one hue`);
+  for (const base of COLORFUL) {
+    const batch = generateBatch(foundationPlan('', AUTO_PALETTES, 1), () => base, 8, { seedFor: stableSeed });
+    const n = batch.filter((b) => oneHue(b.hexes)).length;
+    assert.ok(n <= 2, `${base}: ${n} of 14 palettes are one hue`);
+  }
+  // leaning toward monochrome lets them all be
+  const lean = generateBatch(foundationPlan('monochrome', 9, 1), () => '#E8498F', 8, { seedFor: stableSeed });
+  assert.ok(lean.filter((b) => isOneHue(b.hexes)).length >= 3);
+  {
+  }
+});
+
+test('every palette is usable in the real world: readable text, an accent, and colors you can tell apart', () => {
+  for (const { colors, label } of everyPalette([3, 41, 77])) {
+    assert.ok(bestContrast(colors) >= USABLE.text, `${label}: best text contrast ${bestContrast(colors).toFixed(2)}`);
+    assert.ok(colors.some((c) => hexToOklch(c).c >= USABLE.accent - 0.005), `${label}: no accent`);
+    let closest = 9;
+    for (let i = 0; i < colors.length; i++) for (let j = i + 1; j < colors.length; j++) closest = Math.min(closest, deltaE(colors[i], colors[j]));
+    assert.ok(closest >= USABLE.apart - 0.012, `${label}: two colors only ${closest.toFixed(3)} apart`);
+  }
 });

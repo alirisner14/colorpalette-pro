@@ -25,6 +25,7 @@
 - [ ] Test the cut files on more cutting machines (Cricut, Silhouette, Brother) and adjust
 
 ## Ideas that set it apart
+- [ ] **Live environments** (to discuss): see a palette applied to realistic mockups, like Coolors does (websites, app screens, posters, branding, patterns, illustrations, interiors, typography), building on Palette in context.
 - [ ] **Thumbs up / neutral / down on palettes** to learn what you like (idea, not decided). Each rating would note a
   palette's character (how light, how colorful, how many neutrals, warm or cool, how many wildcards, which backbone), and new
   batches would lean toward liked traits and show the closest matches first, while always keeping some surprises.

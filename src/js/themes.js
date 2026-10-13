@@ -1,5 +1,6 @@
 // Themed random palettes — no starting color needed.
-import { clamp, wrapHue, hslToHex, hexToHsl, colorDistance, makeRng } from './color.js';
+import { wrapHue, hslToHex, hexToHsl, hexToOklch, oklchToHex, makeRng } from './color.js';
+import { generateColors } from './harmonies.js';
 
 /**
  * hues: hue ranges [from, to] in degrees (to may exceed 360 to wrap).
@@ -37,45 +38,62 @@ export const getTheme = (id) => THEMES.find((t) => t.id === id) || THEMES[0];
 const between = (rng, [a, b]) => a + rng() * (b - a);
 
 /**
- * A themed palette. `flavor` varies the mix so a batch isn't samey:
- *  0 balanced (all hue ranges), 1 focus (one or two ranges), 2 tonal (one hue, many values).
+ * A theme as a recipe for the palette generator: which hue families to use (a different mix each
+ * time), how light and how dark, how colorful and how many neutrals. Everything else (the lightness
+ * steps, warm lights and cool darks, which family takes which step, the order) varies per palette,
+ * so shuffling a theme gives really different palettes that still feel like that theme.
  */
-export function generateThemeColors(themeId, n, seed = 1, flavor = 0) {
+export function themeLook(t, rng) {
+  const okHue = (h) => hexToOklch(hslToHex({ h: wrapHue(h), s: 0.7, l: 0.55 })).h;
+  const ranges = [...t.hues];
+  for (let i = ranges.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [ranges[i], ranges[j]] = [ranges[j], ranges[i]]; }
+  let families;
+  if (t.spread) {
+    const start = rng() * 360;
+    families = Array.from({ length: 4 + Math.floor(rng() * 3) }, (_, i) => okHue(start + i * 137.5)); // golden-angle rainbow
+  } else if (ranges.length === 1 && ranges[0][1] - ranges[0][0] >= 300) {
+    // any hue at all (pastels): one hue (all blush), two neighbours (mint and sky) or a soft rainbow
+    const start = rng() * 360;
+    const shape = rng();
+    if (shape < 0.3) families = [okHue(start)];
+    else if (shape < 0.65) families = [okHue(start), okHue(start + (35 + rng() * 30) * (rng() < 0.5 ? -1 : 1))];
+    else families = Array.from({ length: 3 }, (_, i) => okHue(start + i * (100 + rng() * 60)));
+  } else {
+    // one to three of the theme's hue groups; themes built on many hues (neon, candy, tropical) use at least two
+    const least = ranges.length >= 4 ? 2 : 1;
+    const k = Math.min(ranges.length, least + Math.floor(rng() * (4 - least)));
+    families = ranges.slice(0, Math.max(1, k)).map((r) => okHue(between(rng, r)));
+  }
+  // translate the theme's lightness and saturation into OKLCH, sampled over its own hues
+  const sample = (l) => t.hues.map((r) => hexToOklch(hslToHex({ h: wrapHue((r[0] + r[1]) / 2), s: (t.s[0] + t.s[1]) / 2, l })));
+  const loL = Math.min(...sample(t.l[0]).map((c) => c.l));
+  const hiL = Math.max(...sample(t.l[1]).map((c) => c.l));
+  const mid = sample((t.l[0] + t.l[1]) / 2);
+  const chroma = mid.reduce((sum, c) => sum + c.c, 0) / mid.length;
+  const width = hiL - loL;
+  return {
+    families,
+    tonal: true,
+    // some palettes sit high in the theme (latte), some low (dark roast); tints keep some color near the top
+    top: [Math.min(Math.min(0.94, hiL + 0.02), Math.max(loL + 0.15, Math.min(0.92, hiL - 0.03) - Math.min(0.14, width * 0.35))), Math.min(0.94, hiL + 0.02)],
+    range: [Math.max(0.08, width * 0.6), Math.max(0.1, width + 0.04)],
+    mood: [0.6, 1.45], // from chalky to sweet
+    chroma,
+    neutral: t.neutral ?? 0.08,
+    // light, narrow themes (pastels) stay soft, with one dark (charcoal, brown or jewel) for text
+    darkNeutral: !!t.darkNeutral || (loL > 0.6 && width < 0.25),
+    accent: !(loL > 0.6 && width < 0.25),
+  };
+}
+
+/** A themed palette: a color from the theme to start from, then the generator with the theme's recipe. */
+export function generateThemeColors(themeId, n, seed = 1) {
   const t = getTheme(themeId);
   const rng = makeRng(seed);
-  let ranges = t.hues.slice();
-  if (flavor === 1 && ranges.length > 2) {
-    const start = Math.floor(rng() * ranges.length);
-    ranges = [ranges[start], ranges[(start + 1) % ranges.length]];
-  }
-  const tonalHue = between(rng, ranges[Math.floor(rng() * ranges.length)]);
-  const out = [];
-  let guard = 0;
-  while (out.length < n && guard++ < 2000) {
-    const i = out.length;
-    let h, s, l;
-    if (t.neutral && rng() < t.neutral) {
-      h = between(rng, ranges[0]);
-      s = rng() * 0.12;
-      l = t.darkNeutral ? 0.06 + rng() * 0.12 : 0.12 + rng() * 0.8;
-    } else if (flavor === 2) {
-      h = tonalHue + (rng() - 0.5) * 16;
-      s = between(rng, t.s);
-      l = clamp(t.l[0] + ((t.l[1] - t.l[0]) * (i + 0.5)) / n + (rng() - 0.5) * 0.08, 0.06, 0.95);
-    } else if (t.spread) {
-      h = (i / n) * 360 + between(rng, [0, 360 / n]) + seed;
-      s = between(rng, t.s);
-      l = between(rng, t.l);
-    } else {
-      h = between(rng, ranges[i % ranges.length]);
-      s = between(rng, t.s);
-      l = between(rng, t.l);
-    }
-    const hex = hslToHex({ h: wrapHue(h), s: clamp(s), l: clamp(l) });
-    const minDist = guard > 800 ? 10 : 24;
-    if (out.every((c) => colorDistance(c, hex) >= minDist)) out.push(hex);
-  }
-  return tidy(out);
+  const look = themeLook(t, rng);
+  const mid = (t.l[0] + t.l[1]) / 2;
+  const start = oklchToHex({ l: hexToOklch(hslToHex({ h: 0, s: 0, l: mid })).l, c: look.chroma, h: look.families[0] });
+  return generateColors(start, 'organic', n, Math.floor(rng() * 2 ** 31), { look });
 }
 
 /** Group by hue, then light to dark inside each group, for a tidy row of chips. */

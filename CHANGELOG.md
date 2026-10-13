@@ -6,7 +6,13 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed (on the soulful-palettes branch, for review)
+- **Palettes modelled on loved, hand-made palettes** (see docs/PALETTE-RESEARCH.md): a value structure first, 1–3 hue families, lights warmer and darks cooler, color richest in the light mid-tones, mostly soft with an occasional accent, neutrals from none to half, usually ordered light to dark.
+- Replaces 1.1.0's forced extremes and a wildcard in every palette, which measured as the opposite of what people love.
+- **Your color** stays exact in the first two palettes and a palette's first two shuffles; elsewhere it may drift slightly to sit better.
+- **Monochrome** palettes can be one hue in many tones (one per batch unless you lean toward Monochrome).
+- **Themes** now use the same generator, so shuffling a theme gives really different palettes. Pastel themes include one dark (charcoal, brown or a jewel tone) for text.
+- **Usable in the real world:** every palette has a 3:1 pair for headings and shapes, an accent, and colors you can tell apart.
 
 ## [1.1.0] — 2026-10-08
 

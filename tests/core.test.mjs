@@ -46,12 +46,14 @@ test('generation is reproducible with a seed', () => {
   assert.deepEqual(generateColors('#33ADE8', 'random', 9, 7), generateColors('#33ADE8', 'random', 9, 7));
 });
 
-test('a complementary backbone puts a color roughly opposite yours (drifted, not exact)', () => {
-  for (let seed = 1; seed <= 20; seed++) {
-    const own = hexToOklch('#FF0000').h;
-    const hues = generateColors('#FF0000', 'complementary', 8, seed).map(hexToOklch).filter((c) => c.c > 0.045).map((c) => c.h);
-    assert.ok(hues.some((h) => Math.abs(((h - own + 540) % 360) - 180) > 150), `seed ${seed}`);
+test('a complementary backbone often adds a partner from the other side of the wheel', () => {
+  const own = hexToOklch('#FF0000').h;
+  let found = 0;
+  for (let seed = 1; seed <= 30; seed++) {
+    const hues = generateColors('#FF0000', 'complementary', 8, seed).map(hexToOklch).filter((x) => x.c > 0.045).map((x) => x.h);
+    if (hues.some((h) => Math.abs(((h - own + 540) % 360) - 180) > 120)) found++;
   }
+  assert.ok(found >= 15, `only ${found} of 30`);
 });
 
 test('swap options exclude the current palette', () => {

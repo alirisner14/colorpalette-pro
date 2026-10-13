@@ -28,10 +28,11 @@
 | **Build** | Make your own palette: add the color on the wheel, paste a list of HEX/RGB codes, or import a palette file (1–30 colors) |
 
 ### Palettes
-- **Curated, not computed:** each palette is built like a surface designer would build it. A classic harmony (complementary,
-  triadic, …) quietly places the first 3–4 colors, each drifted 10–25° off its textbook spot. The rest are new hues, soft
-  neutrals (creams, taupes, grays, charcoals) and one or two **wildcard** pops that break the rule on purpose.
-  No hue appears in more than two versions, and every palette reaches from very dark to very light and from muted to bright.
+- **Feels hand-made:** palettes are modelled on how loved, real-world palettes behave
+  ([the research](docs/PALETTE-RESEARCH.md)): a run of light-to-dark steps, 1–3 hue families, lights warmer and darks
+  cooler, color richest in the light mid-tones, mostly soft with an occasional accent, and creams and charcoals as needed.
+  A classic harmony quietly chooses the partner hues. Every palette has a pair that reads well together, an accent, and
+  colors you can tell apart, so it works for websites, brands, rooms, coloring pages and paintings.
 - **Lean toward a harmony** (optional): two in every three palettes use it and are labelled; the rest stay a surprise.
   With "Anything goes" (the default) no harmony labels are shown. You choose how many palettes to show (1–40, 14 by default).
 - **Size:** 6–15 colors per palette.
