@@ -57,6 +57,8 @@ busy and soulless, even though it was "varied".
   Monochrome.
 - **Your color:** stays exact in the first two palettes of a batch and a palette's first two shuffles;
   elsewhere it may drift slightly (OKLCH distance up to 0.075) to sit better.
+- **Themes:** about 1 in 4 theme palettes is a pastel moment (with a dark for text); Christmas and
+  Halloween may bring in pink and lilac.
 - **Themes:** recipes for the same generator (which hues, how light, how colorful, how many neutrals), so
   shuffles really differ. Pastel themes get one dark (charcoal, brown or a jewel tone) for text.
 
@@ -67,7 +69,8 @@ Palettes are a guide, so these are gentle floors rather than rules that flatten 
 - a pair with at least 3:1 contrast (headings, shapes and icons). Most palettes reach 4.5:1 on
   their own (100% in our tests before the floor was relaxed, against 46–69% of the loved samples)
 - at least one color with some real color (an accent for logos and calls to action)
-- no two colors so close they are hard to tell apart (OKLab distance of at least 0.035), for
-  coloring pages and charts
+- no two colors so close they are hard to tell apart, for coloring pages and charts: a perceptual
+  gap of 0.06 (0.05 in 12–15 color palettes), measured with extra weight on darks, which look alike on
+  screens sooner than the numbers suggest
 
 The tests in `tests/variety.test.mjs` hold the generator to all of the above.

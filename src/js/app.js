@@ -285,6 +285,21 @@ function updateBadge() {
 
 /* ================= actions ================= */
 
+/**
+ * A fresh set of palettes starts at the top: if you've scrolled down the list, jump back up to the
+ * first palette (never down, so a control you're using above the list stays in view).
+ */
+function backToFirstPalette() {
+  const results = $('.results');
+  if (!results) return;
+  const bar = parseFloat(getComputedStyle($('.topbar') ?? document.body).height) || 0;
+  const y = results.getBoundingClientRect().top + window.scrollY - bar - 8;
+  if (window.scrollY <= y + 4) return;
+  // a long way down: jump straight there (a long smooth scroll is slow); a short way: glide
+  const far = window.scrollY - y > window.innerHeight * 1.5;
+  window.scrollTo({ top: Math.max(0, y), behavior: far || reducedMotion() ? 'auto' : 'smooth' });
+}
+
 function regenerate(opts = {}) {
   generate(opts);
   renderPalettes(opts);
@@ -585,6 +600,7 @@ function makeMood(text, { fresh = false } = {}) {
   generate({ stable: !fresh });
   renderMood();
   renderPalettes();
+  backToFirstPalette();
   savePrefs();
 }
 
@@ -786,6 +802,7 @@ function init() {
 
   $('#regen-all').addEventListener('click', (e) => {
     regenerate();
+    backToFirstPalette();
     if (state.mode === 'mood') renderMood();
     if (state.mode === 'photo') renderPhoto();
     const icon = e.currentTarget.querySelector('svg');
@@ -822,6 +839,7 @@ function init() {
     state.themeId = getTheme(id).id;
     renderThemes();
     regenerate();
+    backToFirstPalette();
     savePrefs();
   };
   $('#theme-select').addEventListener('change', (e) => pickTheme(e.target.value));

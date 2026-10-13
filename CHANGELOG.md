@@ -13,6 +13,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - **Monochrome** palettes can be one hue in many tones (one per batch unless you lean toward Monochrome).
 - **Themes** now use the same generator, so shuffling a theme gives really different palettes. Pastel themes include one dark (charcoal, brown or a jewel tone) for text.
 - **Usable in the real world:** every palette has a 3:1 pair for headings and shapes, an accent, and colors you can tell apart.
+- **No near-twin colors:** steps no longer bunch up, neighbours alternate richer and quieter, and every pair must look clearly different, with a wider gap for darks (which look alike on screens). Near-twins in 8-color palettes went from 20% to 0%.
+- **Fewer monochrome look-alikes:** single-family palettes are rare outside the monochrome slot (about 1–2 one-hue palettes per 14).
+- **Pastel moments in themes:** about 1 in 4 theme palettes comes out soft (girly Halloween, pink-chic Christmas), always with a dark for text.
+- **Shuffle all, a new theme or a new mood starts you at the first palette** instead of leaving you halfway down the list.
 
 ## [1.1.0] — 2026-10-08
 

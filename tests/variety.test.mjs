@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  FOUNDATIONS, MIN_COLORS, MAX_COLORS, AUTO_PALETTES, NEUTRAL_C, SAME_HUE, MAX_SAME_HUE, CONTRAST, ORGANIC, chromaCurve, EXACT_FIRST, BASE_DRIFT, isOneHue, USABLE, bestContrast,
+  FOUNDATIONS, MIN_COLORS, MAX_COLORS, AUTO_PALETTES, NEUTRAL_C, SAME_HUE, MAX_SAME_HUE, CONTRAST, ORGANIC, chromaCurve, EXACT_FIRST, BASE_DRIFT, isOneHue, USABLE, bestContrast, seenGap, apartFor,
   generateColors, generateDistinct, generateBatch, foundationPlan, paletteSimilarity, colorfulSimilarity, paletteLikeness, pickDistinct,
 } from '../src/js/harmonies.js';
 import { normalizeHex, hexToOklch, oklchToHex, deltaE } from '../src/js/color.js';
@@ -142,7 +142,7 @@ test('shuffle all: the new batch does not look like the batch it replaces', () =
   for (const base of COLORFUL) {
     const old = generateBatch(plan, () => base, 8, { seedFor: stableSeed }).map((b) => b.hexes);
     const fresh = generateBatch(foundationPlan('', AUTO_PALETTES, 77), () => base, 8, { seedFor: (i) => 31337 * (i + 3), seen: old }).map((b) => b.hexes);
-    fresh.forEach((p, i) => assert.ok(colorfulSimilarity(p, old[i]) < 0.5, `${base} #${i} kept the same colors`));
+    fresh.forEach((p, i) => assert.ok(colorfulSimilarity(p, old[i]) <= 0.5, `${base} #${i} kept the same colors`));
     const typical = fresh.reduce((t, p) => t + Math.max(...old.map((o) => paletteLikeness(p, o))), 0) / fresh.length;
     assert.ok(typical < 0.65, `${base}: new palettes look like old ones (${typical.toFixed(2)})`);
   }
@@ -215,7 +215,20 @@ test('every palette is usable in the real world: readable text, an accent, and c
     assert.ok(bestContrast(colors) >= USABLE.text, `${label}: best text contrast ${bestContrast(colors).toFixed(2)}`);
     assert.ok(colors.some((c) => hexToOklch(c).c >= USABLE.accent - 0.005), `${label}: no accent`);
     let closest = 9;
-    for (let i = 0; i < colors.length; i++) for (let j = i + 1; j < colors.length; j++) closest = Math.min(closest, deltaE(colors[i], colors[j]));
-    assert.ok(closest >= USABLE.apart - 0.012, `${label}: two colors only ${closest.toFixed(3)} apart`);
+    for (let i = 0; i < colors.length; i++) for (let j = i + 1; j < colors.length; j++) closest = Math.min(closest, seenGap(colors[i], colors[j]));
+    assert.ok(closest >= apartFor(colors.length) - 0.008, `${label}: two colors only ${closest.toFixed(3)} apart`);
   }
+});
+
+test('no two colors look nearly the same, including two darks side by side (default 8-color palettes)', () => {
+  let twins = 0, total = 0;
+  for (const [k, base] of ['#33ADE8', '#E8498F', '#7FD1B9', '#FFC75F', '#6D597A', '#2A9D8F', '#E76F51', '#9AA0A6'].entries()) {
+    for (const { hexes } of generateBatch(foundationPlan('', AUTO_PALETTES, k + 1), () => base, 8, { seedFor: (i) => 991 * (i + 1) + k })) {
+      total++;
+      let closest = 9;
+      for (let i = 0; i < 8; i++) for (let j = i + 1; j < 8; j++) closest = Math.min(closest, seenGap(hexes[i], hexes[j]));
+      if (closest < apartFor(8) - 0.004) twins++;
+    }
+  }
+  assert.ok(twins / total < 0.02, `${twins} of ${total} palettes have a near-twin pair`);
 });

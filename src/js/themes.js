@@ -4,6 +4,7 @@ import { generateColors } from './harmonies.js';
 
 /**
  * hues: hue ranges [from, to] in degrees (to may exceed 360 to wrap).
+ * softHues: extra hues its pastel moments may bring in (pink for a pink-chic Christmas).
  * s/l: saturation and lightness ranges. neutral: share of near-neutral colors.
  */
 export const THEMES = [
@@ -11,8 +12,8 @@ export const THEMES = [
   { id: 'summer', label: 'Summer Splash', emoji: '🏖️', hues: [[180, 205], [40, 55], [5, 20], [325, 345]], s: [0.65, 0.95], l: [0.5, 0.72] },
   { id: 'autumn', label: 'Autumn Harvest', emoji: '🍂', hues: [[15, 40], [40, 55], [0, 12], [70, 90]], s: [0.45, 0.85], l: [0.28, 0.58], neutral: 0.1 },
   { id: 'winter', label: 'Winter Frost', emoji: '❄️', hues: [[195, 230], [250, 275], [170, 190]], s: [0.15, 0.55], l: [0.4, 0.92], neutral: 0.25 },
-  { id: 'halloween', label: 'Spooky Halloween', emoji: '🎃', hues: [[22, 34], [270, 290], [95, 115]], s: [0.7, 1], l: [0.3, 0.58], neutral: 0.15, darkNeutral: true },
-  { id: 'christmas', label: 'Cozy Christmas', emoji: '🎄', hues: [[350, 365], [125, 150], [42, 50]], s: [0.5, 0.85], l: [0.25, 0.55], neutral: 0.15 },
+  { id: 'halloween', label: 'Spooky Halloween', emoji: '🎃', hues: [[22, 34], [270, 290], [95, 115]], s: [0.7, 1], l: [0.3, 0.58], neutral: 0.15, darkNeutral: true, softHues: [[320, 345], [280, 300]] },
+  { id: 'christmas', label: 'Cozy Christmas', emoji: '🎄', hues: [[350, 365], [125, 150], [42, 50]], s: [0.5, 0.85], l: [0.25, 0.55], neutral: 0.15, softHues: [[330, 350], [345, 360]] },
   { id: 'valentine', label: 'Sweet Valentine', emoji: '💘', hues: [[330, 360], [345, 365], [280, 300]], s: [0.5, 0.9], l: [0.45, 0.85] },
   { id: 'easter', label: 'Easter Egg Hunt', emoji: '🐣', hues: [[270, 290], [50, 60], [140, 165], [190, 210], [330, 350]], s: [0.45, 0.75], l: [0.78, 0.9] },
   { id: 'ocean', label: 'Ocean Breeze', emoji: '🌊', hues: [[175, 230], [35, 45]], s: [0.4, 0.85], l: [0.25, 0.8] },
@@ -71,9 +72,27 @@ export function themeLook(t, rng) {
   const mid = sample((t.l[0] + t.l[1]) / 2);
   const chroma = mid.reduce((sum, c) => sum + c.c, 0) / mid.length;
   const width = hiL - loL;
+  const pastelTheme = loL > 0.6 && width < 0.25;
+  if (!pastelTheme && rng() < 0.25) {
+    // a pastel moment: the theme in soft tints (girly Halloween, pink-chic Christmas), with one dark for text
+    const soft = (t.softHues ?? []).map((r) => okHue(between(rng, r)));
+    if (soft.length && rng() < 0.65) families = [...families.slice(0, 2), soft[Math.floor(rng() * soft.length)]];
+    return {
+      families,
+      tonal: false,
+      top: [0.92, 0.95],
+      range: [0.16, 0.24],
+      mood: [0.75, 1.2],
+      chroma: Math.min(chroma, 0.075),
+      neutral: 0.1,
+      darkNeutral: true,
+      accent: false,
+      pastel: true,
+    };
+  }
   return {
     families,
-    tonal: true,
+    tonal: !pastelTheme, // one-hue pastels may still lean blush, peach, apricot
     // some palettes sit high in the theme (latte), some low (dark roast); tints keep some color near the top
     top: [Math.min(Math.min(0.94, hiL + 0.02), Math.max(loL + 0.15, Math.min(0.92, hiL - 0.03) - Math.min(0.14, width * 0.35))), Math.min(0.94, hiL + 0.02)],
     range: [Math.max(0.08, width * 0.6), Math.max(0.1, width + 0.04)],
@@ -91,8 +110,9 @@ export function generateThemeColors(themeId, n, seed = 1) {
   const t = getTheme(themeId);
   const rng = makeRng(seed);
   const look = themeLook(t, rng);
-  const mid = (t.l[0] + t.l[1]) / 2;
-  const start = oklchToHex({ l: hexToOklch(hslToHex({ h: 0, s: 0, l: mid })).l, c: look.chroma, h: look.families[0] });
+  // start from the middle of the palette's own light-to-dark band (a pastel moment starts pastel)
+  const avg = ([a, b]) => (a + b) / 2;
+  const start = oklchToHex({ l: avg(look.top) - avg(look.range) / 2, c: look.chroma, h: look.families[0] });
   return generateColors(start, 'organic', n, Math.floor(rng() * 2 ** 31), { look });
 }
 

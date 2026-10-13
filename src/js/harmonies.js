@@ -152,11 +152,13 @@ function familyHues(own, foundation, n, rng, tonal = true) {
   const partners = foundation.offsets.slice(1).map((o) => wrapHue(own.h + o + drift()));
   if (foundation.id === 'monochrome') {
     const home = wrapHue(own.h + gauss(rng) * 10);
-    const near = wrapHue(home + sign(rng) * (25 + rng() * 15));
-    return rng() < 0.4 || !tonal ? [home, near] : [home];
+    const near = wrapHue(home + sign(rng) * (35 + rng() * 20)); // far enough to read as a second, related hue
+    // big monochromes bring in a neighbouring hue: 11+ tones of one hue cannot all look different
+    return rng() < 0.3 || !tonal || n > 10 ? [home, near] : [home];
   }
   const extra = n >= 10 ? 1 : 0;
-  const want = pick(rng, [[1, 0.25], [2, 0.45], [3, 0.3]]) + extra;
+  // one family only now and then (single-family palettes read as monochromes, and those have their own slot)
+  const want = pick(rng, [[1, 0.1], [2, 0.55], [3, 0.35]]) + extra;
   shuffleInPlace(partners, rng);
   // your color's family centres a little to one side of it, so palettes from the same color differ
   const home = wrapHue(own.h + gauss(rng) * 16);
@@ -176,7 +178,25 @@ function contrastOf(a, b) {
 /** The usability every palette is held to (see makeUsable). */
 // A palette is a guide (people pick their own shades for body text), so these are gentle floors:
 // a 3:1 pair is enough for headings, shapes and icons; most palettes reach 4.5:1 on their own.
-export const USABLE = { text: 3, accent: 0.07, apart: 0.035 };
+export const USABLE = { text: 3, accent: 0.07, apart: 0.06 };
+
+/** How far apart every two colors must look: a little less in very big palettes, where room runs out. */
+export const apartFor = (n) => (n <= 8 ? USABLE.apart : n <= 11 ? USABLE.apart - 0.005 : USABLE.apart - 0.01);
+
+/**
+ * How different two colors look side by side (OKLab distance, weighted for how eyes see on a
+ * screen): among darks, both lightness and color differences are harder to see, and among
+ * near-whites color differences fade. So two darks need a bigger gap to look as different.
+ */
+export function seenGap(a, b) {
+  const p = hexToOklch(a), q = hexToOklch(b);
+  const L = (p.l + q.l) / 2;
+  const wl = L < 0.42 ? 0.7 + (L / 0.42) * 0.3 : 1;
+  const wc = L < 0.42 ? 0.6 + (L / 0.42) * 0.4 : L > 0.86 ? 0.8 : 1;
+  const ab = (o) => [o.c * Math.cos((o.h * Math.PI) / 180), o.c * Math.sin((o.h * Math.PI) / 180)];
+  const [pa, pb] = ab(p), [qa, qb] = ab(q);
+  return Math.hypot((p.l - q.l) * wl, (pa - qa) * wc, (pb - qb) * wc);
+}
 
 /** The best text contrast between any two colors of a palette. */
 export function bestContrast(hexes) {
@@ -191,7 +211,7 @@ export function bestContrast(hexes) {
  * - accent: at least one color with some real color, for logos and calls to action
  * - apart: no two colors so close they are hard to tell apart, for coloring pages and charts
  */
-function makeUsable(hexes, picks, at, { text = true, accent = true } = {}) {
+function makeUsable(hexes, picks, at, { text = true, accent = true, lRange = [0.1, 0.97], tonal = false, band = null } = {}) {
   const others = () => hexes.map((_, i) => i).filter((i) => i !== at);
   const set = (i, l, c, h) => { picks[i] = { ...picks[i], l, c, h }; hexes[i] = ok(l, c, h); };
   if (text) {
@@ -216,27 +236,78 @@ function makeUsable(hexes, picks, at, { text = true, accent = true } = {}) {
       set(mid, l, USABLE.accent + 0.03, p.h);
     }
   }
-  for (let pass = 0; pass < 6; pass++) {
+  const gap = apartFor(hexes.length);
+  for (let pass = 0; pass < (hexes.length >= 12 ? 14 : 8); pass++) {
+    let moved = false;
     for (const i of others()) {
       for (const j of hexes.keys()) {
-        if (i === j || deltaE(hexes[i], hexes[j]) >= USABLE.apart) continue;
+        if (i === j || seenGap(hexes[i], hexes[j]) >= gap) continue;
+        moved = true;
         const p = picks[i];
+        const mine = hexToOklch(hexes[i]).l, theirs = hexToOklch(hexes[j]).l;
         // step away from its twin (lighter if it is the lighter one, darker if darker), within bounds
-        let dir = hexToOklch(hexes[i]).l >= hexToOklch(hexes[j]).l ? 1 : -1;
-        if ((dir > 0 && p.l > 0.93) || (dir < 0 && p.l < 0.14)) dir = -dir;
-        // light tints have no room to move in lightness, and a crowded palette may have none left:
-        // turn the hue instead
-        if (p.l > 0.82 || pass >= 3) set(i, p.l, Math.max(p.c, 0.03), wrapHue(p.h + (i % 2 ? 1 : -1) * 30));
-        else set(i, clamp(p.l + dir * 0.045, 0.1, 0.97), p.c, p.h);
+        let dir = mine >= theirs ? 1 : -1;
+        if ((dir > 0 && p.l > 0.93) || (dir < 0 && p.l < 0.15)) dir = -dir;
+        // a theme (pastels) keeps its colors inside its own lightness band; its dark for text keeps its own
+        const [lo, hi] = p.l < lRange[0] - 0.1 ? [0.12, Math.max(0.2, lRange[0] - 0.2)] : lRange;
+        const stuck = p.l + dir * 0.05 < lo || p.l + dir * 0.05 > hi;
+        if (tonal && (p.l > 0.82 || pass >= 3 || stuck)) {
+          // last resort, and the way one-hue palettes separate: one richer, one quieter (by position, so
+          // two twins never make the same change), and a color stuck at an end moves toward the middle
+          const l = stuck ? clamp(p.l + (p.l > 0.5 ? -0.05 : 0.05), lo, hi) : p.l;
+          set(i, l, i % 2 ? Math.max(0.02, p.c * 0.55) : p.c + 0.06, p.h);
+        } else if (mine < 0.42 && theirs < 0.42 && pass < 4) {
+          // two darks: spread them in lightness first (the darker goes deeper), they read as one otherwise
+          set(i, clamp(p.l + dir * 0.05, Math.max(lo, 0.13), hi), p.c, p.h);
+        } else if (p.l > 0.82 || pass >= 3 || p.l + dir * 0.05 < lo || p.l + dir * 0.05 > hi) {
+          // light tints have no room in lightness, and a crowded palette may have none left: turn the hue
+          set(i, p.l, Math.max(p.c, 0.03), wrapHue(p.h + (i % 2 ? 1 : -1) * 30));
+        } else set(i, clamp(p.l + dir * 0.05, lo, hi), p.c, p.h);
       }
     }
+    if (!moved) break;
+  }
+  // Still crowded (a narrow theme, or a very big palette): spread the steps evenly through the
+  // band, alternating a richer and a quieter color, so every step reads as its own.
+  const crowded = () => others().some((i) => hexes.some((x, j) => j !== i && seenGap(hexes[i], x) < gap));
+  if (crowded()) {
+    const [lo, hi] = lRange;
+    const order = others().filter((i) => picks[i].l >= lo - 0.1).sort((a, b) => hexToOklch(hexes[b]).l - hexToOklch(hexes[a]).l);
+    // the palette's planned light and dark ends (its colors may have bunched up since)
+    // (a one-hue palette has only lightness to tell its colors apart, so it may use the whole range)
+    const wide = tonal || hexes.length >= 12; // one hue, or a very big palette: use the whole range
+    const top = wide ? Math.min(hi, 0.95) : Math.min(hi, Math.max(band?.[1] ?? 0, ...order.map((i) => picks[i].l)));
+    const bottom = wide ? Math.max(lo, 0.16) : Math.max(lo, Math.min(band?.[0] ?? 1, ...order.map((i) => picks[i].l)));
+    // one slot more than needed, and the one nearest your color is left for it
+    const mine = hexToOklch(hexes[at]).l;
+    const hiEnd = Math.max(top, mine), loEnd = Math.min(bottom, mine); // your color is always inside the range
+    // spaced evenly in how different they look (see seenGap), so the darks get wider steps
+    const seenL = (l) => (l < 0.42 ? 0.7 * l + (0.3 * l * l) / 0.84 : 0.7 * 0.42 + (0.3 * 0.42) / 2 + (l - 0.42));
+    const fromSeen = (u) => { let a = 0, b = 1; for (let k = 0; k < 30; k++) { const m = (a + b) / 2; if (seenL(m) < u) a = m; else b = m; } return a; };
+    // build outward from your color, so the steps beside it are a full step away
+    const [u0, u1, um] = [seenL(loEnd), seenL(hiEnd), seenL(mine)];
+    const m = order.length;
+    const above = Math.min(m, Math.max(0, Math.round((m * (u1 - um)) / Math.max(1e-6, u1 - u0))));
+    const below = m - above;
+    const slots = [
+      ...Array.from({ length: above }, (_, k) => fromSeen(um + ((u1 - um) * (above - k)) / above)),
+      ...Array.from({ length: below }, (_, k) => fromSeen(um - ((um - u0) * (k + 1)) / below)),
+    ];
+    order.forEach((i, k) => {
+      const p = picks[i];
+      const l = slots[k];
+      set(i, l, k % 2 ? Math.max(0.02, p.c * 0.7) : p.c * 1.25 + 0.01, p.h);
+    });
   }
 }
 
 /** Whether all the colorful colors of a palette are one hue (a true monochrome). */
 export function isOneHue(hexes) {
   const hues = hexes.map(hexToOklch).filter((c) => c.c >= NEUTRAL_C).map((c) => c.h);
-  return hues.every((h) => hueGap(h, hues[0]) < 30);
+  if (hues.length < 2) return true;
+  const x = hues.reduce((t, h) => t + Math.cos((h * Math.PI) / 180), 0), y = hues.reduce((t, h) => t + Math.sin((h * Math.PI) / 180), 0);
+  const mean = (Math.atan2(y, x) * 180) / Math.PI; // the palette's average hue
+  return hues.every((h) => hueGap(h, mean) < 22);
 }
 
 /**
@@ -271,12 +342,12 @@ export function generateColors(baseHex, foundationId, count, seed, { exact = tru
   const deep = !moody && rng() < 0.22; // sometimes the strip runs all the way down to an ink
   let range = clamp(0.32 + rng() * 0.3 + (n - 5) * 0.012 + (deep ? 0.2 : 0), CONTRAST.range + 0.02, top - 0.1);
   if (look) { top = clamp(span(look.top), 0.3, 0.97); range = clamp(span(look.range), 0.08, top - 0.06); } // a theme sets its own light and dark
-  const levels = Array.from({ length: n }, (_, i) => top - (range * i) / (n - 1) + (i && i < n - 1 ? gauss(rng) * (range / (n - 1)) * 0.3 : 0));
+  const levels = Array.from({ length: n }, (_, i) => top - (range * i) / (n - 1) + (i && i < n - 1 ? gauss(rng) * (range / (n - 1)) * 0.15 : 0));
   if (look?.darkNeutral) levels[n - 1] = 0.2 + rng() * 0.07; // a soft charcoal, not pure black
 
   // 2. The palette's character.
   const mood = look ? span(look.mood) : clamp(0.55 + rng() * 0.75 + (own.c - 0.1) * 1.5, 0.45, 1.5); // how colorful overall
-  const shift = (14 + rng() * 34) * (tonal ? 0.45 : 1); // how strongly lights warm up and darks cool down
+  const shift = (14 + rng() * 34) * (tonal ? 0.25 : 1); // how strongly lights warm up and darks cool down
   let neutralShare = pick(rng, [[0, 0.35], [0.12 + rng() * 0.18, 0.5], [0.38 + rng() * 0.12, 0.15]]);
   if (look) neutralShare = clamp(look.neutral * (0.5 + rng()), 0, 0.5) + (look.darkNeutral ? 1 / n : 0);
   const neutrals = new Set();
@@ -315,7 +386,7 @@ export function generateColors(baseHex, foundationId, count, seed, { exact = tru
       const warmCream = l > 0.8 && rng() < 0.7;
       return { l, c: 0.008 + rng() * 0.025, h: warmCream ? 75 + gauss(rng) * 12 : h, kind: 'neutral' };
     }
-    const curve = chromaCurve(l) * mood * (0.8 + rng() * 0.4);
+    const curve = chromaCurve(l) * mood * (0.8 + rng() * 0.4) * (i % 2 ? 1.12 : 0.88); // richer, quieter, richer…
     // a theme keeps its own intensity (pastels stay sweet, jewels stay rich) with the curve as a guide
     const w = look ? clamp(look.chroma / 0.13, 0.6, 0.92) : 0; // vivid themes lean on their own intensity more
     const c = look ? curve * (1 - w) + look.chroma * mood * (0.75 + rng() * 0.5) * w : curve;
@@ -352,13 +423,14 @@ export function generateColors(baseHex, foundationId, count, seed, { exact = tru
     const p = picks[i];
     for (let k = 1; k < 10; k++) {
       const others = hexes.filter((_, j) => j !== i);
-      const crowd = !tonal && p.kind !== 'neutral' && hexes.filter((x, j) => j !== i && hexToOklch(x).c >= NEUTRAL_C && hueGap(hexToOklch(x).h, p.h) < SAME_HUE).length >= MAX_SAME_HUE;
+      const crowd = !tonal && foundation.id !== 'monochrome' && p.kind !== 'neutral' && hexes.filter((x, j) => j !== i && hexToOklch(x).c >= NEUTRAL_C && hueGap(hexToOklch(x).h, p.h) < SAME_HUE).length >= MAX_SAME_HUE;
       if (isDistinct(hexes[i], others) && !crowd) break;
       // a crowded hue moves the painterly way: lighter colors warmer, darker colors cooler
       if (crowd && k >= 6) { p.kind = 'neutral'; p.c = 0.012 + rng() * 0.022; } // no room left: let it rest as a neutral
       else if (crowd) p.h = k < 4 ? turnToward(p.h, p.l > 0.6 ? 85 : 265, SAME_HUE + 3) : wrapHue(p.h + sign(rng) * (SAME_HUE + 3));
       else if (k < 5) p.l = clamp(p.l + (p.l > 0.88 || k % 2 ? -1 : 1) * 0.035 * Math.ceil(k / 2), 0.08, 0.97);
       // still a twin (often near white, where lightness has no room): give it a hue and a touch of color
+      else if (tonal) p.c = p.c > 0.08 ? p.c * 0.55 : p.c + 0.06; // a one-hue palette stays one hue
       else { p.h = wrapHue(p.h + sign(rng) * 28); p.c = Math.max(p.c, 0.05); }
       hexes[i] = ok(p.l, p.c, p.h);
     }
@@ -366,7 +438,13 @@ export function generateColors(baseHex, foundationId, count, seed, { exact = tru
 
   // 6. Make sure it works in the real world (a website, a brand deck, a room, a coloring page).
   // pastel themes keep their softness: their readable color is the dark one above, not a loud accent
-  makeUsable(hexes, picks, at, { text: true, accent: !look || look.accent !== false });
+  makeUsable(hexes, picks, at, {
+    text: true,
+    accent: !look || look.accent !== false,
+    lRange: look?.accent === false ? [Math.min(top - range - 0.02, top - 0.16), 0.97] : [0.1, 0.97],
+    tonal,
+    band: [Math.min(...levels), Math.max(...levels)],
+  });
 
   // 7. Order: most often a light-to-dark strip (either way round), otherwise grouped by family.
   const order = Array.from({ length: n }, (_, i) => i);

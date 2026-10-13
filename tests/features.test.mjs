@@ -199,3 +199,20 @@ test('every published legal document renders without publisher notes or leftover
     assert.ok(!/\*\*|Easy-dlp|yt-dlp|SmartScreen|Microsoft Store|\[[A-Z ]{3,}\]/.test(html), `${id} has leftovers`);
   }
 });
+
+test('themes have pastel moments now and then: girly Halloween, pink-chic Christmas, each with a dark for text', () => {
+  for (const id of ['halloween', 'christmas', 'autumn', 'jewel']) {
+    let soft = 0, pink = 0;
+    for (let s = 1; s <= 40; s++) {
+      const o = generateThemeColors(id, 8, s).map(hexToOklch);
+      const light = o.filter((c) => c.l > 0.75).length;
+      if (light >= 5) {
+        soft++;
+        assert.ok(o.some((c) => c.l < 0.35), `${id}/${s}: a pastel moment still has a dark for text`);
+        if (o.some((c) => c.c > 0.03 && ((c.h > 330 || c.h < 10) || (c.h > 300 && c.h <= 330)))) pink++;
+      }
+    }
+    assert.ok(soft >= 4 && soft <= 18, `${id}: ${soft} of 40 were pastel`);
+    if (id === 'christmas' || id === 'halloween') assert.ok(pink >= 1, `${id}: no pink in its pastel moments`);
+  }
+});
