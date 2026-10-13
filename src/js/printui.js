@@ -145,7 +145,7 @@ export function openPrint({ palettes = [], format } = {}) {
       return;
     }
     const pg = pages[st.page];
-    pv.innerHTML = `<div class="pv-sheet" style="aspect-ratio:${pg.w} / ${pg.h}">${toSvg(pg, { units: 'none', title: pg.meta.label, idPrefix: 'pv' })}</div>`;
+    pv.innerHTML = `<div class="pv-sheet" style="aspect-ratio:${pg.w} / ${pg.h};--ar:${(pg.w / pg.h).toFixed(4)}">${toSvg(pg, { units: 'none', title: pg.meta.label, idPrefix: 'pv' })}</div>`;
     $('#pn').innerHTML = `<button type="button" class="icon-btn sm" data-page="-1" aria-label="Previous page" ${st.page === 0 ? 'disabled' : ''}>‹</button><span>${esc(pg.meta.label)} <small>(${st.page + 1} of ${pages.length})</small></span><button type="button" class="icon-btn sm" data-page="1" aria-label="Next page" ${st.page === pages.length - 1 ? 'disabled' : ''}>›</button>`;
     $('#pnotes').innerHTML = built.notes.map((n) => `<p class="imp-note">${esc(n)}</p>`).join('');
   }

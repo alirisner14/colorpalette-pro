@@ -136,7 +136,9 @@ select.text-input { appearance: none; }
 .print-side { position: sticky; top: 0; display: flex; flex-direction: column; gap: 10px; }
 @media (max-width: 900px) { .print-side { position: static; } }
 .print-preview { background: color-mix(in srgb, var(--ink) 10%, transparent); border-radius: 18px; padding: 14px; display: grid; place-items: center; min-height: 240px; max-height: 56vh; overflow: auto; }
-.pv-sheet { background: #fff; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, .45); width: min(100%, 460px); max-height: 52vh; }
+/* the sheet keeps the page's own proportions: as wide as fits, but never taller than the space allows */
+.pv-sheet { background: #fff; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, .45); width: min(100%, 460px, calc(52vh * var(--ar, .77))); }
+.pstudio .pv-sheet { width: min(100%, 640px, calc(max(52vh, 100vh - 340px) * var(--ar, .77))); }
 .pv-sheet svg { width: 100%; height: 100%; display: block; }
 .pv-empty { text-align: center; padding: 30px 10px; }
 .print-nav { display: flex; align-items: center; justify-content: center; gap: 12px; font-weight: 800; }

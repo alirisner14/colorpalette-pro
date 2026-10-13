@@ -80,7 +80,7 @@ test('blocks: each has its own header at its top, with space before the next blo
     mode: 'fill', header: { medium: true, brand: true, count: false },
   });
   const items = r.pages[0].items;
-  const mediums = items.filter((it) => it.t === 'text' && it.text === 'Medium');
+  const mediums = items.filter((it) => it.t === 'text' && it.text === 'Medium:');
   assert.equal(mediums.length, 2, 'one header per block');
   assert.ok(words(r.pages).includes('Colored pencil') && words(r.pages).includes('Alcohol marker'), 'filled-in values are printed');
   const chips = items.filter((it) => it.t === 'rect' && it.stroke && it.r > 0 && it.w === it.h);
@@ -106,7 +106,7 @@ test('write in later leaves blank lines; fill in now prints what you typed', () 
   const now = buildBlankPages({ blocks, mode: 'fill', info: { name: true, number: true } });
   assert.ok(['Gouache', 'Crimson', '102', 'Teal'].every((w) => words(now.pages).includes(w)));
   const lines = now.pages[0].items.filter((it) => it.t === 'line').length;
-  assert.ok(lines >= 3 * 2 + 2, 'every write-in still has its line, filled or not');
+  assert.ok(lines >= 3 * 2 + 1, 'every write-in still has its line, filled or not (and the header its rule)');
 });
 
 test('one shape for everything by default; a different shape per block when you ask for it', () => {
@@ -144,4 +144,49 @@ test('pages export: PDF, SVG and cut files', () => {
     assert.ok(toSvg(cutPage(pg), { units: 'mm', bg: null }).includes('<path'));
   });
   assert.ok(r.notes.some((t) => /cut file/.test(t)));
+});
+
+test('the header prints the count already (the block size), unless you typed your own', () => {
+  const plain = words(buildBlankPages({ blocks: [{ count: 18 }] }).pages);
+  assert.ok(plain.includes('Count:') && plain.includes('18'));
+  const typed = words(buildBlankPages({ blocks: [{ count: 18, setCount: '18 + 2 blenders' }], mode: 'fill' }).pages);
+  assert.ok(typed.includes('18 + 2 blenders'));
+});
+
+test('swatch chart look: wide chips with a gray strip joined underneath to write on', () => {
+  const r = buildBlankPages({ blocks: [{ count: 12 }], chip: 'wide', style: 'strip', info: { name: true, number: true }, mode: 'fill' });
+  const items = r.pages[0].items;
+  const chips = items.filter((it) => it.t === 'rect' && it.fill === '#FFFFFF' && it.stroke);
+  const strips = items.filter((it) => it.t === 'rect' && it.fill === '#E3E6EB');
+  assert.equal(chips.length, 12);
+  assert.equal(strips.length, 12);
+  chips.forEach((c) => assert.ok(Math.abs(c.w / c.h - 2) < 0.05, 'chips are about 2:1'));
+  strips.forEach((s, i) => {
+    assert.ok(Math.abs(s.y - (chips[i].y + chips[i].h)) < 0.5, 'the strip is joined to the chip');
+    assert.ok(Math.abs(s.w - chips[i].w) < 0.01, 'and just as wide');
+  });
+  // hearts and stars stay their own shape even when chips are wide
+  const hearts = buildBlankPages({ blocks: [{ count: 6 }], shape: 'heart', chip: 'wide', info: { name: false, number: false } }).pages[0].items.filter((it) => it.t === 'path' && it.s !== 1);
+  assert.equal(hearts.length, 6);
+});
+
+test('repeat to fill the page: several sets of the same size, each with its own header', () => {
+  const twelve = buildBlankPages({ blocks: [{ count: 12 }], repeat: true, chip: 'wide', style: 'strip' });
+  assert.equal(twelve.pages.length, 1);
+  const heads = twelve.pages[0].items.filter((it) => it.t === 'text' && it.text === 'Count:').length;
+  assert.ok(heads >= 3, `${heads} sets of 12 on the page`);
+  assert.equal(twelve.total, heads * 12);
+  const many = buildBlankPages({ blocks: [{ count: 150 }], repeat: true });
+  assert.equal(many.total, 150, 'a set that already fills the page is not repeated');
+  const two = buildBlankPages({ blocks: [{ count: 12 }, { count: 24 }], repeat: true });
+  assert.equal(two.total, 36, 'repeat is for a single block');
+});
+
+test('a part-filled last row is centered', () => {
+  const items = buildBlankPages({ blocks: [{ count: 7 }], info: { name: false, number: false }, numbered: false }).pages[0].items;
+  const chips = items.filter((it) => it.t === 'rect' && it.stroke).sort((a, b) => a.y - b.y || a.x - b.x);
+  const rows = [...new Set(chips.map((c) => Math.round(c.y)))];
+  const center = (row) => { const cs = chips.filter((c) => Math.round(c.y) === row); return (Math.min(...cs.map((c) => c.x)) + Math.max(...cs.map((c) => c.x + c.w))) / 2; };
+  assert.ok(rows.length >= 2);
+  assert.ok(Math.abs(center(rows[0]) - center(rows[rows.length - 1])) < 0.5);
 });

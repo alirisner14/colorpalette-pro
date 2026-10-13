@@ -22,6 +22,7 @@
 - [ ] Phase 2: **DIY blank swatch deck** (spaces per blade, single or double column, front and back counts, cover write-ins, color info placement on the back)
 - [ ] Phase 3: **Match physical mediums to palettes**, pages and decks (side by side or front and back, palette picker with previews)
 - [ ] Phase 4: **Saved palettes only**, pages and decks; then the Print & cut dialog moves into Studio
+- [ ] Ideas from Ali's own swatch book (to discuss): a **testing page** (layering 1–5, blending in the same and complementary color families, fixative and erasure tests), **3- and 4-color blend / combo cards**, a **color mixing grid**, a **coloring log**, **blending samples**, and **color theory** pages (relationships, harmonies, anatomy of color, practice) plus a notes page
 
 ## Next: high value, low effort
 - [ ] **Rename individual colors** (planned for the next round). Tap a color's name to type your own, the same way palette names already work. Your names show up in exports, prints, backups and shared links, and a shuffle keeps the names of locked colors. Also check that palette renaming is easy to find everywhere a palette appears (swatch book, deck, full-screen viewer), not just on the Create page.

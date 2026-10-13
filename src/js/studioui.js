@@ -86,7 +86,8 @@ function totalText() {
   const fitText = st.sides === 'double'
     ? `${built.sheets} sheet${built.sheets === 1 ? '' : 's'}, printed on both sides`
     : `${pages} page${pages === 1 ? '' : 's'}`;
-  return `<b>${totalOf(st)} swatches</b> · ${fitText} · swatches about ${Math.round(built.chip)} mm (${(built.chip / 25.4).toFixed(2)}″) across`;
+  const sets = st.repeat && st.blocks.length === 1 && built.total > st.blocks[0].count ? ` (${built.total / st.blocks[0].count} sets of ${st.blocks[0].count})` : '';
+  return `<b>${built.total} swatches</b>${sets} · ${fitText} · swatches about ${Math.round(built.chip)} mm (${(built.chip / 25.4).toFixed(2)}″) across`;
 }
 
 function controlsHtml() {
@@ -105,7 +106,8 @@ function controlsHtml() {
     <section class="dlg-section"><h3>Write-ins</h3>
       ${seg('mode', st.mode, [['write', 'Write in later'], ['fill', 'Fill in now']], 'Write-ins')}
       <p class="dlg-note">${fill ? 'Type the medium, brand, count and color names in the app, and they print on the lines. Anything left empty stays a blank line to write on.' : 'Blank lines (or boxes) where you choose, to write on by hand.'}</p>
-      ${seg('style', st.style, [['lines', 'Lines'], ['boxes', 'Boxes']], 'Write-in style')}
+      ${seg('style', st.style, [['lines', 'Lines'], ['boxes', 'Boxes'], ['strip', 'Strip']], 'Write-in style')}
+      ${st.style === 'strip' ? '<p class="dlg-note">A gray strip joined under each swatch, for the color name (and number, split off at the right).</p>' : ''}
       <h4 class="st-h4">At the top of each block</h4>
       ${toggle('header.medium', 'Medium', st.header.medium, 'Watercolor, gouache, pencils…')}
       ${toggle('header.brand', 'Brand', st.header.brand)}
@@ -114,7 +116,7 @@ function controlsHtml() {
       ${toggle('numbered', 'Number the swatches', st.numbered, '1, 2, 3…')}
       ${toggle('info.name', 'Color name', st.info.name)}
       ${toggle('info.number', 'Color number', st.info.number, 'The maker’s number, like 102 or PC924')}
-      ${seg('infoPos', st.infoPos, [['top', 'Top'], ['bottom', 'Bottom'], ['left', 'Left'], ['right', 'Right']], 'Where the color info goes')}
+      ${st.style === 'strip' ? '' : seg('infoPos', st.infoPos, [['top', 'Top'], ['bottom', 'Bottom'], ['left', 'Left'], ['right', 'Right']], 'Where the color info goes')}
     </section>
     <section class="dlg-section"><h3>Swatches</h3>
       <div class="fchips st-presets" role="group" aria-label="Common set sizes">${SET_SIZES.map((n) => `<button type="button" class="fchip" data-preset="${n}">${n}</button>`).join('')}</div>
@@ -123,7 +125,9 @@ function controlsHtml() {
     </section>
     <section class="dlg-section"><h3>Shape</h3>
       <div class="shape-grid">${PRINT_SHAPES.map((s) => `<button type="button" class="shape-pick ${st.shape === s.id ? 'is-on' : ''}" data-shape-all="${s.id}" aria-pressed="${st.shape === s.id}" title="${esc(s.label)}">${shapeIconHtml(s)}<span>${esc(s.label)}</span></button>`).join('')}</div>
+      ${(st.mixShapes ? st.blocks.some((b) => b.shape === 'rect') : st.shape === 'rect') ? seg('chip', st.chip, [['square', 'Square chips'], ['wide', 'Wide chips']], 'Chip shape') : ''}
       ${toggle('mixShapes', 'A different shape for each block', st.mixShapes)}
+      ${st.blocks.length === 1 ? toggle('repeat', 'Repeat this set to fill the page', st.repeat, 'Several blank sets of the same size on one sheet (4 of 12, 3 of 18…)') : ''}
     </section>`;
 }
 
@@ -131,7 +135,7 @@ function controlsHtml() {
 
 function renderPreview() {
   const pg = built.pages[st.page];
-  $('#st-preview', root).innerHTML = `<div class="pv-sheet" style="aspect-ratio:${pg.w} / ${pg.h}">${toSvg(pg, { units: 'none', title: pg.meta.label, idPrefix: 'stp' })}</div>`;
+  $('#st-preview', root).innerHTML = `<div class="pv-sheet" style="aspect-ratio:${pg.w} / ${pg.h};--ar:${(pg.w / pg.h).toFixed(4)}">${toSvg(pg, { units: 'none', title: pg.meta.label, idPrefix: 'stp' })}</div>`;
   const n = built.pages.length;
   $('#st-nav', root).innerHTML = n > 1
     ? `<button type="button" class="icon-btn sm" data-page="-1" aria-label="Previous page" ${st.page === 0 ? 'disabled' : ''}>‹</button><span>${esc(pg.meta.label)}</span><button type="button" class="icon-btn sm" data-page="1" aria-label="Next page" ${st.page === n - 1 ? 'disabled' : ''}>›</button>`

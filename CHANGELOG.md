@@ -8,6 +8,20 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 Nothing yet.
 
+## [1.3.2] — 2026-10-14
+
+### Added
+- Studio blank swatch pages, ideas from a classic swatch chart:
+  - **Strip** write-in style: a gray strip joined under each swatch for the color name (and number, split off at the right).
+  - **Wide chips** (about 2:1, like paint chips) as well as square.
+  - **Repeat this set to fill the page:** several blank sets of the same size on one sheet (4 of 12, 3 of 18…), each with its own header.
+  - Block headers read **“Count: 12  Medium: ___  Brand: ___”** on one rule, with the count already printed (type your own to change it).
+  - A part-filled last row is centered.
+  - More quick picks: 18, 50, 60, 80, 96 and 180.
+
+### Fixed
+- The printable preview kept the page’s proportions on narrower screens (the white sheet used to stretch wider than the page).
+
 ## [1.3.1] — 2026-10-14
 
 ### Changed
