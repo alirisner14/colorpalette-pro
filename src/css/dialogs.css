@@ -202,9 +202,17 @@ select.text-input { appearance: none; }
 .st-type:disabled { opacity: .55; cursor: default; }
 .st-type small { color: var(--ink-soft); font-weight: 700; }
 .st-presets { gap: 6px; }
-.st-block { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: center; gap: 8px; margin-bottom: 8px; }
-.st-block-no { font-weight: 800; font-size: .82rem; color: var(--ink-soft); white-space: nowrap; }
+.st-block { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; margin-bottom: 8px; border-radius: 16px; background: var(--glass-inset); border: 1px solid var(--glass-border); }
+.st-block-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.st-block-top .st-blk-x { margin-left: auto; }
 .st-block input[type="number"] { width: 3.6em; text-align: center; font-weight: 900; border: 1px solid var(--glass-border); border-radius: 10px; padding: 6px 2px; background: var(--glass-inset); color: var(--ink); }
+.st-heads { display: grid; grid-template-columns: 1fr 1fr 5.5em; gap: 6px; }
+.st-in { display: flex; flex-direction: column; gap: 2px; font-size: .72rem; font-weight: 800; color: var(--ink-soft); }
+.st-in input, .st-color input { min-width: 0; border: 1px solid var(--glass-border); border-radius: 10px; padding: 7px 8px; background: var(--glass-strong); color: var(--ink); font-weight: 700; }
+.st-h4 { margin: 8px 0 0; font-size: .74rem; font-weight: 800; color: var(--ink-soft); }
+.st-colors { display: flex; flex-direction: column; gap: 6px; max-height: 42vh; overflow: auto; padding-right: 4px; }
+.st-color { display: grid; grid-template-columns: 2.2em minmax(0, 1fr) 6.5em; gap: 6px; align-items: center; }
+.st-color b { text-align: right; color: var(--ink-soft); font-size: .8rem; }
 .st-shape-sel select { padding: 8px 30px 8px 10px; font-size: .85rem; }
 .st-h3 { margin: 4px 0 6px; font-size: .78rem; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-soft); }
-@media (max-width: 520px) { .st-types { grid-template-columns: 1fr; } .st-block { grid-template-columns: auto minmax(0, 1fr) auto; } .st-block-no { grid-column: 1 / -1; } }
+@media (max-width: 520px) { .st-types { grid-template-columns: 1fr; } .st-heads { grid-template-columns: 1fr 1fr; } }

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  SET_SIZES, TOTAL_MAX, BLOCK_MAX, MIN_CHIP, PER_PAGE_MAX, blocksFor, normalizeBlank, totalOf, buildBlankPages,
+  SET_SIZES, TOTAL_MAX, MIN_CHIP, PER_PAGE_MAX, blocksFor, normalizeBlank, totalOf, buildBlankPages, parseColorList,
 } from '../src/js/studio.js';
 import { buildPdf } from '../src/js/pdf.js';
 import { toSvg } from '../src/js/scene.js';
@@ -16,29 +16,31 @@ function assertInMargins(pg, label) {
     assert.ok(x0 >= MARGIN - 1.2 && y0 >= MARGIN - 1.2 && x1 <= pg.w - MARGIN + 1.2 && y1 <= pg.h - MARGIN + 2, `${label}: ${it.t} outside the margins ${[x0, y0, x1, y1].map((v) => v.toFixed(1))}`);
   }
 }
+const words = (pages) => pages.flatMap((pg) => pg.items.filter((it) => it.t === 'text').map((it) => it.text));
 
 const VARIANTS = [
   {},
-  { orient: 'landscape', info: { name: true, number: true }, infoPos: 'right', fill: 'boxes' },
+  { orient: 'landscape', info: { name: true, number: true }, infoPos: 'right', style: 'boxes' },
   { info: { name: true, number: true }, infoPos: 'top', header: { medium: true, brand: true, count: true } },
   { info: { name: false, number: false }, numbered: false, header: { medium: false, brand: false, count: false }, paper: 'a4' },
-  { info: { name: true, number: false }, infoPos: 'left', sides: 'double' },
+  { info: { name: true, number: false }, infoPos: 'left', sides: 'double', mode: 'fill' },
 ];
 
-test('set sizes split into blocks of at most 72, adding up to the size', () => {
-  for (const n of SET_SIZES) {
-    const blocks = blocksFor(n);
-    assert.equal(blocks.reduce((t, b) => t + b.count, 0), n);
-    assert.ok(blocks.every((b) => b.count <= BLOCK_MAX));
-  }
+test('a set size is one block (one set, one header)', () => {
+  for (const n of SET_SIZES) assert.deepEqual(blocksFor(n), [{ count: n }]);
 });
 
-test('options are tidied: blocks capped at 72 each and 500 in all, unknown shapes become chips', () => {
-  const o = normalizeBlank({ blocks: [{ count: 99, shape: 'banana' }, ...Array.from({ length: 10 }, () => ({ count: 72, shape: 'heart' }))] });
-  assert.equal(o.blocks[0].count, BLOCK_MAX);
+test('options are tidied: 500 swatches in all, unknown shapes become chips, write in later by default', () => {
+  const o = normalizeBlank({ shape: 'banana', blocks: [{ count: 400, shape: 'banana' }, { count: 300 }] });
   assert.equal(o.blocks[0].shape, 'rect');
+  assert.equal(o.shape, 'rect');
   assert.equal(totalOf(o), TOTAL_MAX);
-  assert.deepEqual(normalizeBlank({}).blocks, [{ count: 24, shape: 'rect' }]);
+  const d = normalizeBlank({});
+  assert.equal(d.blocks.length, 1);
+  assert.equal(d.blocks[0].count, 24);
+  assert.equal(d.mode, 'write');
+  assert.equal(d.style, 'lines');
+  assert.equal(normalizeBlank({ fill: 'boxes' }).style, 'boxes', 'settings saved by 1.3.0 still work');
 });
 
 test('every swatch is drawn once, numbered in order, inside the margins, with one cut outline each', () => {
@@ -72,15 +74,58 @@ test('page rules: up to 150 fit one page, 240 and up need several, double-sided 
   }
 });
 
-test('mix and match: each block keeps its own shape, and a new block starts on a new row', () => {
-  const r = buildBlankPages({ blocks: [{ count: 7, shape: 'rect' }, { count: 5, shape: 'heart' }], info: { name: false, number: false } });
+test('blocks: each has its own header at its top, with space before the next block', () => {
+  const r = buildBlankPages({
+    blocks: [{ count: 24, medium: 'Colored pencil', brand: 'Brand A' }, { count: 36, medium: 'Alcohol marker', brand: 'Brand B' }],
+    mode: 'fill', header: { medium: true, brand: true, count: false },
+  });
   const items = r.pages[0].items;
-  const rects = items.filter((it) => it.t === 'rect' && it.stroke);
-  const hearts = items.filter((it) => it.t === 'path' && it.s !== 1);
-  assert.equal(rects.length, 7);
-  assert.equal(hearts.length, 5);
-  const lastChipBottom = Math.max(...rects.map((it) => it.y + it.h));
-  assert.ok(hearts.every((it) => it.ty > lastChipBottom), 'the hearts begin below the chips');
+  const mediums = items.filter((it) => it.t === 'text' && it.text === 'Medium');
+  assert.equal(mediums.length, 2, 'one header per block');
+  assert.ok(words(r.pages).includes('Colored pencil') && words(r.pages).includes('Alcohol marker'), 'filled-in values are printed');
+  const chips = items.filter((it) => it.t === 'rect' && it.stroke && it.r > 0 && it.w === it.h);
+  const secondHeader = mediums[1].y;
+  assert.equal(chips.filter((it) => it.y < secondHeader).length, 24, 'block 1 sits above block 2’s header');
+  assert.equal(chips.filter((it) => it.y > secondHeader).length, 36);
+});
+
+test('a block that runs onto the next page repeats its header, marked continued', () => {
+  const r = buildBlankPages({ blocks: [{ count: 300, brand: 'Big set' }], mode: 'fill', header: { medium: true, brand: true, count: true } });
+  assert.ok(r.pages.length >= 2);
+  r.pages.forEach((pg, i) => {
+    const w = pg.items.filter((it) => it.t === 'text').map((it) => it.text);
+    assert.ok(w.includes('Big set'), `page ${i + 1} names the set`);
+    assert.equal(w.includes('(continued)'), i > 0);
+  });
+});
+
+test('write in later leaves blank lines; fill in now prints what you typed', () => {
+  const blocks = [{ count: 3, medium: 'Gouache', colors: [{ name: 'Crimson', number: '102' }, { name: 'Teal' }] }];
+  const later = buildBlankPages({ blocks, mode: 'write', info: { name: true, number: true } });
+  assert.ok(!['Gouache', 'Crimson', '102', 'Teal'].some((w) => words(later.pages).includes(w)));
+  const now = buildBlankPages({ blocks, mode: 'fill', info: { name: true, number: true } });
+  assert.ok(['Gouache', 'Crimson', '102', 'Teal'].every((w) => words(now.pages).includes(w)));
+  const lines = now.pages[0].items.filter((it) => it.t === 'line').length;
+  assert.ok(lines >= 3 * 2 + 2, 'every write-in still has its line, filled or not');
+});
+
+test('one shape for everything by default; a different shape per block when you ask for it', () => {
+  const blocks = [{ count: 7, shape: 'rect' }, { count: 5, shape: 'heart' }];
+  const same = buildBlankPages({ blocks, shape: 'star', info: { name: false, number: false } }).pages[0].items;
+  assert.equal(same.filter((it) => it.t === 'path' && it.s !== 1).length, 12, 'all twelve are stars');
+  const mixed = buildBlankPages({ blocks, mixShapes: true, info: { name: false, number: false } }).pages[0].items;
+  assert.equal(mixed.filter((it) => it.t === 'rect' && it.stroke && it.w === it.h).length, 7);
+  assert.equal(mixed.filter((it) => it.t === 'path' && it.s !== 1).length, 5);
+});
+
+test('pasted color lists are read in the common ways people write them', () => {
+  assert.deepEqual(parseColorList('Crimson Red, PC924\nPC1005 Limepeel\nTeal\tB02\n\n  Sky Blue  '), [
+    { name: 'Crimson Red', number: 'PC924' },
+    { name: 'Limepeel', number: 'PC1005' },
+    { name: 'Teal', number: 'B02' },
+    { name: 'Sky Blue', number: '' },
+  ]);
+  assert.deepEqual(parseColorList('102, Crimson'), [{ name: 'Crimson', number: '102' }]);
 });
 
 test('portrait and landscape, Letter and A4, are the right size', () => {
@@ -90,19 +135,8 @@ test('portrait and landscape, Letter and A4, are the right size', () => {
   assert.deepEqual([l.w, l.h], [297, 210]);
 });
 
-test('the header only shows what you tick, and fill-ins can be lines or boxes', () => {
-  const words = (r) => r.pages[0].items.filter((it) => it.t === 'text').map((it) => it.text);
-  const all = buildBlankPages({ header: { medium: true, brand: true, count: true } });
-  assert.ok(['Medium', 'Brand', 'Count'].every((w) => words(all).includes(w)));
-  const none = buildBlankPages({ header: { medium: false, brand: false, count: false } });
-  assert.ok(!['Medium', 'Brand', 'Count'].some((w) => words(none).includes(w)));
-  const lines = buildBlankPages({ fill: 'lines' }).pages[0].items.filter((it) => it.t === 'line').length;
-  const boxes = buildBlankPages({ fill: 'boxes' }).pages[0].items.filter((it) => it.t === 'line').length;
-  assert.ok(lines > 0 && boxes === 0);
-});
-
 test('pages export: PDF, SVG and cut files', () => {
-  const r = buildBlankPages({ blocks: blocksFor(150), sides: 'double', format: 'cut' });
+  const r = buildBlankPages({ blocks: blocksFor(150), sides: 'double', format: 'cut', mode: 'fill' });
   const pdf = buildPdf(r.pages, { title: 'Test' });
   assert.ok(pdf.length > 1000);
   r.pages.forEach((pg) => {

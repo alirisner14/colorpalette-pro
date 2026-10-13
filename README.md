@@ -68,12 +68,18 @@ quilt, a brand board). Tap any shape to repaint it, shuffle the arrangement, try
 **coloring page**. Save as PNG, PDF or SVG.
 
 ### Studio (printables)
-A third tab for making printables, with a live preview. **DIY blank swatch pages** so far: US Letter or A4, portrait or
-landscape; 1–500 swatches (quick picks 12 to 500, or blocks of 1–72 you mix and match, each with its own shape); single- or
-double-sided (up to 150 fit one page, bigger sets go over several); write-ins for **medium, brand and count** at the top
-of the page and a **color name and number** beside every swatch (top, bottom, left or right), as lines or boxes; numbered
-swatches. Save as PDF, PNG or JPG, or choose **Print & cut** for a zip with an SVG cut file per page. Blank decks, matching
-supplies to palettes, and palette-only pages and decks are coming next.
+A third tab for making printables, with a live preview. **DIY blank swatch pages** so far:
+- US Letter or A4, portrait or landscape, single- or double-sided (up to 150 swatches fit one page; bigger sets go over
+  several pages, and swatches never shrink below about 1 cm).
+- **Blocks**, one per set you own (24 pencils, then 36 markers…), each with its own **medium, brand and count** at its
+  top and space before the next. Quick picks from 12 to 500. One shape for everything, or a different shape per block.
+- A **color name and number** with every swatch (top, bottom, left or right), and numbered swatches.
+- **Fill in now** (type it all in the app, or paste a list of names and numbers, and it prints on the lines) or **write
+  in later** (blank lines or boxes). One-click brand color sets are ready for the lists to be added.
+- Every Print & cut export: PDF, SVG (full or **cut lines only**), PNG (transparent for Print Then Cut) and JPG, at 200 or
+  300 dpi, all pages or just one. **Print & cut** adds an SVG cut file per page.
+
+Blank decks, matching supplies to palettes, and palette-only pages and decks are coming next.
 
 ### Print and cut
 Make a **swatch deck** (blades) or **swatch book** (pages) as **PDF, SVG, PNG or JPG**, on US Letter or A4.

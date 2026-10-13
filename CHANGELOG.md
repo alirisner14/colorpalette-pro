@@ -8,6 +8,16 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 Nothing yet.
 
+## [1.3.1] — 2026-10-14
+
+### Changed
+- **Studio blocks are sets:** every block has its own medium, brand and count at its top, with space before the next block (a 24-pencil set, then a 36-marker set…). A block that runs onto the next page repeats its header, marked “continued”. A set size is one block (one header), up to 500.
+- **One shape for everything** by default; “A different shape for each block” is a switch.
+- **Fill in now or write in later:** type the medium, brand, count and every color’s name and number in the app (or paste a list, like “Crimson Red, PC924”), and they print on the lines; or leave blank lines or boxes to write on by hand.
+- Brand color sets for one-click fill-ins are ready to receive lists.
+- **All of Print & cut’s exports in Studio:** SVG (full or cut lines only), transparent PNG for Print Then Cut, 200 or 300 dpi, all pages or this page only.
+- “Color number” starts switched off, so a 150 set still fits one page; switch it on for both.
+
 ## [1.3.0] — 2026-10-14
 
 ### Added
