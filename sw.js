@@ -6,7 +6,7 @@
 //   slow or missing connection it answers from the stored copy.
 // - It only ever stores files from that list, so nothing else piles up.
 // - On activation it deletes every older version of its cache.
-const VERSION = 'cpp-v1.2.2';
+const VERSION = 'cpp-v1.3.0';
 const PREFIX = 'cpp-';
 const SHELL = /*SHELL:START*/[
   './',
@@ -85,6 +85,8 @@ const SHELL = /*SHELL:START*/[
   './src/js/sheet.js',
   './src/js/storage.js',
   './src/js/store.js',
+  './src/js/studio.js',
+  './src/js/studioui.js',
   './src/js/textmetrics.js',
   './src/js/themes.js',
   './src/js/ui.js',

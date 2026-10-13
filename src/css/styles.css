@@ -153,6 +153,12 @@ svg { fill: currentColor; }
   .nav-seg > button { padding: 11px 18px; }
   body { padding-bottom: 86px; }
 }
+/* three tabs on a narrow phone: tighter, so all three fit */
+@media (max-width: 440px) {
+  .nav-seg { max-width: calc(100vw - 20px); }
+  .nav-seg > button { padding: 10px 11px; gap: 5px; font-size: .9rem; }
+  .nav-seg > button svg { width: 17px; height: 17px; }
+}
 
 main { flex: 1; width: 100%; max-width: 1440px; margin: 0 auto; padding: 8px clamp(16px, 3vw, 32px) 32px; }
 

@@ -67,6 +67,14 @@ See a palette on **example artwork** (mandala, sunset hills, flower vase, geomet
 quilt, a brand board). Tap any shape to repaint it, shuffle the arrangement, try a dark version, or turn it into a
 **coloring page**. Save as PNG, PDF or SVG.
 
+### Studio (printables)
+A third tab for making printables, with a live preview. **DIY blank swatch pages** so far: US Letter or A4, portrait or
+landscape; 1–500 swatches (quick picks 12 to 500, or blocks of 1–72 you mix and match, each with its own shape); single- or
+double-sided (up to 150 fit one page, bigger sets go over several); write-ins for **medium, brand and count** at the top
+of the page and a **color name and number** beside every swatch (top, bottom, left or right), as lines or boxes; numbered
+swatches. Save as PDF, PNG or JPG, or choose **Print & cut** for a zip with an SVG cut file per page. Blank decks, matching
+supplies to palettes, and palette-only pages and decks are coming next.
+
 ### Print and cut
 Make a **swatch deck** (blades) or **swatch book** (pages) as **PDF, SVG, PNG or JPG**, on US Letter or A4.
 - **Match my supplies:** your palette colors, each with a blank spot beside it (or on the back, printed two-sided) so you can

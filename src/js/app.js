@@ -612,14 +612,14 @@ function navigate(target) {
     setMode('build');
     target = 'create';
   }
+  if (!['create', 'book', 'studio'].includes(target)) target = 'create';
   const isBook = target === 'book';
   if (state.view !== target && !reducedMotion()) {
-    const el = $(isBook ? '#view-book' : '#view-create');
+    const el = $(`#view-${target}`);
     requestAnimationFrame(() => el.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { duration: 280, easing: 'ease-out' }));
   }
   state.view = target;
-  $('#view-create').hidden = isBook;
-  $('#view-book').hidden = !isBook;
+  ['create', 'book', 'studio'].forEach((v) => { $(`#view-${v}`).hidden = v !== target; });
   $$('#main-nav [data-nav]').forEach((t) => {
     const on = t.dataset.nav === target;
     t.classList.toggle('is-on', on);
@@ -627,6 +627,7 @@ function navigate(target) {
   });
   syncSegment($('#main-nav'));
   if (isBook) showBook();
+  if (target === 'studio') import('./studioui.js').then((m) => m.showStudio($('#view-studio')));
   if (location.hash !== `#${target}`) history.replaceState(null, '', `#${target}`);
   scrollTo({ top: 0 });
 }
@@ -879,7 +880,7 @@ function init() {
   document.fonts?.ready.then(() => { syncSegment($('#main-nav')); syncSegment($('#mode-seg')); });
 
   const start = location.hash.slice(1);
-  navigate(['book', 'create'].includes(start) ? start : 'create');
+  navigate(['book', 'create', 'studio'].includes(start) ? start : 'create');
 
   if (incomingShare) handleIncomingShare();
 

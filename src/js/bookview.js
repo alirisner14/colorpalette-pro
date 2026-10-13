@@ -472,7 +472,7 @@ export function cardMenu(anchor, id, { inViewer = false } = {}) {
     ...(inViewer ? [] : [
       { label: 'Open', icon: ICONS.sparkle, onSelect: () => openViewer(id, cardEl()) },
       { label: 'Export…', icon: ICONS.download, onSelect: () => openExportSheet(p, 'chip') },
-      { label: 'Edit in studio', icon: ICONS.pencil, onSelect: () => emit('edit-palette', id) },
+      { label: 'Edit in Create', icon: ICONS.pencil, onSelect: () => emit('edit-palette', id) },
     ]),
     ...paletteMoreItems(p),
     '-',

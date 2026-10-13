@@ -17,6 +17,12 @@
 - [x] **Mood from a word:** type "rainy café" and get a palette
 - [x] **Share link / QR code:** palette data encoded in the link, so there's no server
 
+## Studio (printables), in phases
+- [x] Phase 1: Studio tab, paper and orientation, **DIY blank swatch pages** (blocks, shapes, single or double-sided, write-ins, numbering), Print or Print & cut
+- [ ] Phase 2: **DIY blank swatch deck** (spaces per blade, single or double column, front and back counts, cover write-ins, color info placement on the back)
+- [ ] Phase 3: **Match physical mediums to palettes**, pages and decks (side by side or front and back, palette picker with previews)
+- [ ] Phase 4: **Saved palettes only**, pages and decks; then the Print & cut dialog moves into Studio
+
 ## Next: high value, low effort
 - [ ] **Rename individual colors** (planned for the next round). Tap a color's name to type your own, the same way palette names already work. Your names show up in exports, prints, backups and shared links, and a shuffle keeps the names of locked colors. Also check that palette renaming is easy to find everywhere a palette appears (swatch book, deck, full-screen viewer), not just on the Create page.
 - [ ] Drag to reorder colors inside a palette

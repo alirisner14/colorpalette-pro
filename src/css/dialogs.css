@@ -188,3 +188,23 @@ select.text-input { appearance: none; }
   .palette-actions .art-btn span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .palette-actions .art-btn { width: 40px; height: 40px; padding: 0; justify-content: center; border-radius: 50%; }
 }
+
+/* ---------- Studio (printables) ---------- */
+.pstudio-head { max-width: 1180px; margin: 8px auto 14px; }
+.pstudio-head h1 { margin: 0 0 4px; }
+.pstudio { max-width: 1180px; margin: 0 auto 32px; border-radius: 28px; padding: 18px; }
+.pstudio .print-controls { max-height: calc(100vh - 230px); }
+.pstudio .print-preview { max-height: calc(100vh - 330px); }
+@media (max-width: 900px) { .pstudio .print-controls, .pstudio .print-preview { max-height: none; } .pstudio { padding: 12px; } }
+.st-types { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.st-type { display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 9px 11px; border-radius: 14px; border: 2px solid transparent; background: var(--glass-inset); font-size: .82rem; line-height: 1.2; }
+.st-type.is-on { border-color: var(--accent); background: var(--glass-strong); }
+.st-type:disabled { opacity: .55; cursor: default; }
+.st-type small { color: var(--ink-soft); font-weight: 700; }
+.st-presets { gap: 6px; }
+.st-block { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: center; gap: 8px; margin-bottom: 8px; }
+.st-block-no { font-weight: 800; font-size: .82rem; color: var(--ink-soft); white-space: nowrap; }
+.st-block input[type="number"] { width: 3.6em; text-align: center; font-weight: 900; border: 1px solid var(--glass-border); border-radius: 10px; padding: 6px 2px; background: var(--glass-inset); color: var(--ink); }
+.st-shape-sel select { padding: 8px 30px 8px 10px; font-size: .85rem; }
+.st-h3 { margin: 4px 0 6px; font-size: .78rem; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-soft); }
+@media (max-width: 520px) { .st-types { grid-template-columns: 1fr; } .st-block { grid-template-columns: auto minmax(0, 1fr) auto; } .st-block-no { grid-column: 1 / -1; } }

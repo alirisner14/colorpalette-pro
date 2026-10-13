@@ -8,6 +8,20 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 Nothing yet.
 
+## [1.3.0] — 2026-10-14
+
+### Added
+- **Studio**, a new tab for printables, with a live preview. First up: **DIY blank swatch pages**.
+  - US Letter or A4, portrait or landscape.
+  - 1–500 swatches: quick picks (12, 24, 36, 48, 72, 100, 120, 150, 240, 300, 400, 500) or your own mix of blocks (1–72 each), every block with its own shape.
+  - Single- or double-sided; up to 150 fit on one page, bigger sets go over several pages, and swatches never get smaller than about 1 cm.
+  - Write-ins for medium, brand and count at the top of the page, and a color name and number beside every swatch (top, bottom, left or right), as lines or boxes. Swatches can be numbered.
+  - Save as PDF, PNG or JPG; **Print & cut** adds an SVG cut file per page in a zip.
+
+### Changed
+- "Edit in studio" and "Open in studio" are now "Edit in Create" and "Open in Create", so "Studio" means the new printables tab.
+- On narrow phones the bottom menu is a little tighter so all three tabs fit.
+
 ## [1.2.2] — 2026-10-13
 
 ### Changed

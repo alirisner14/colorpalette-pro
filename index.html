@@ -38,6 +38,10 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm0 2v16h2V4H6Zm4 0v16h8V4h-8Z"/></svg>
         <span>Swatch Book</span> <span class="badge" id="fav-count">0</span>
       </button>
+      <button type="button" data-nav="studio">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v5H7V3Zm-2 6h14a3 3 0 0 1 3 3v5h-4v4H6v-4H2v-5a3 3 0 0 1 3-3Zm3 7v3h8v-3H8Zm10-4.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z"/></svg>
+        <span>Studio</span>
+      </button>
     </nav>
     <div class="topbar-tools">
       <button type="button" class="btn btn-glass btn-sm" id="install-btn" hidden>Install</button>
@@ -52,7 +56,7 @@
     <section id="view-create" class="view" aria-labelledby="create-title">
       <h1 id="create-title" class="sr-only">Create palettes</h1>
       <div class="studio-layout">
-        <aside class="studio glass" aria-label="Studio">
+        <aside class="studio glass" aria-label="Palette controls">
           <div class="seg seg-modes" id="mode-seg" role="tablist" aria-label="Start from">
             <span class="seg-ink" aria-hidden="true"></span>
             <button type="button" role="tab" data-mode="color">Color</button>
@@ -189,6 +193,9 @@
       </div>
     </section>
 
+    <!-- ================= STUDIO (printables) ================= -->
+    <section id="view-studio" class="view" hidden aria-labelledby="studio-title"></section>
+
     <!-- ================= SWATCH BOOK / DECK ================= -->
     <section id="view-book" class="view" hidden aria-labelledby="book-title">
       <div class="book-head">
@@ -259,7 +266,7 @@
           <button type="button" class="icon-btn" id="v-more" aria-label="More: move, art, share, print" title="More: move, art, share, print" aria-haspopup="menu">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
           </button>
-          <button type="button" class="icon-btn" id="v-edit" aria-label="Edit in studio" title="Edit in studio">
+          <button type="button" class="icon-btn" id="v-edit" aria-label="Edit in Create" title="Edit in Create">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17.2V20h2.8l8.3-8.3-2.8-2.8L4 17.2Zm13.7-7.6a1 1 0 0 0 0-1.4l-1.9-1.9a1 1 0 0 0-1.4 0l-1.4 1.4 2.8 2.8 1.9-1.9Z"/></svg>
           </button>
           <button type="button" class="icon-btn" id="v-delete" aria-label="Remove from book" title="Remove from book">

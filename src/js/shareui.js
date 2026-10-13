@@ -87,7 +87,7 @@ export function openSharedPalette(code, { onOpenInStudio } = {}) {
         <span class="select-wrap glass-inset"><select id="shared-tab">${book.sections.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select></span>
       </label>
       <div class="dlg-foot">
-        <button type="button" class="btn btn-glass" data-do="studio">Open in studio</button>
+        <button type="button" class="btn btn-glass" data-do="studio">Open in Create</button>
         <button type="button" class="btn btn-primary" data-do="save">Save to my swatch book</button>
       </div>
     </div>`,
